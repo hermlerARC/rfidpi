@@ -1,2 +1,0 @@
-# rfidpi
-RFID on Raspberry
