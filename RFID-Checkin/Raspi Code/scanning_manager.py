@@ -11,18 +11,16 @@ To read more about Mercury API for Python go to: https://github.com/gotthardp/py
 Edited on: January 31, 2019
 '''
 
-import datetime, json, mercury, tag
+import datetime, json, mercury, Tag
 
-reader = None # RFID reader object
-
-def get_tags(status): 
+def get_tags(status, reader): 
     all_tags = []
     all_tag_data = reader.read() # Read every tag near RFID reader
-
+    
     for tag_data in all_tag_data: # Loop through each TagReadData object
-        epc = str(tag_data.epc, 'utf-8') # Encode epc from byte to string 
-        all_tags.append(tag(epc, status).to_json()) # Create tag object from epc and status and get json representation
-
+        epc = str(tag_data.epc, 'utf-8')# Encode epc from byte to string
+        all_tags.append(Tag.tag(epc, status).to_json()) # Create tag object from epc and status and get json representation
+        
     return all_tags
 
 def scanning_manager(pipe):
@@ -54,11 +52,11 @@ def scanning_manager(pipe):
             if sensor_in.value < 1000: 
                 trip_time = datetime.datetime.now()
                 tripped_sensor = "in"
-                active_tags = tag.get_tags('out') 
+                active_tags = tag.get_tags('out', reader) 
             elif sensor_out.value < 1000: 
                 trip_time = datetime.datetime.now()
                 tripped_sensor = "out"
-                active_tags = tag.get_tags('in') 
+                active_tags = tag.get_tags('in', reader) 
         elif (datetime.datetime.now() - trip_time).total_seconds() < 3: 
             if (sensor_in.value < 1000 and tripped_sensor == "out") or (sensor_out.value < 1000 and tripped_sensor == "in"):
                 pipe.send(json.dumps(active_tags))

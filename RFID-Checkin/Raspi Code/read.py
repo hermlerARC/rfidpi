@@ -11,7 +11,7 @@ Edited on: January 31, 2019
 
 from multiprocessing import Process, Pipe
 import paho.mqtt.client as mqtt
-import reporting_manager, scanning_manager, json
+import reporting_manager, scanning_manager, json, mercury
 
 RASPI_ID = 'UPOGDU' # Unique ID to differentiate between different systems that are connected to the UI Client
 reporting_process = None # Process that handles RFID tag read reporting to the MQTT Broker
@@ -28,7 +28,10 @@ def client_messaged(client, data, msg):
         scanning_process.start()
     # Read for RFID tags and mark as heading 'in'. Publish to MQTT topic 'reader/{RASPI_ID}/active_tag'
     elif (msg.payload == b'read_once'):
-        active_tags = scanning_manager.get_tags('in')
+        reader = mercury.Reader("tmr:///dev/ttyUSB0", baudrate=9600)
+        reader.set_region('NA')
+        
+        active_tags = scanning_manager.get_tags('in', reader)
         client.publish('reader/{}/active_tag'.format(RASPI_ID), json.dumps(active_tags), qos=1)
     # When 'stop' is posted on the topic 'reader/{RASPI_ID}/status'
     # Kill reporting_process and scanning_process

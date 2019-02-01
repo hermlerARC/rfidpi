@@ -18,10 +18,11 @@ class tag:
         self.Location = "North Main Door" # Example location
         self.Time = datetime.datetime.now()
     def to_json(self):
-        return 
-        {
+        obj = {
             "EPC" : self.EPC,
-            "Timestamp" : self.Time.isoformat(),
+            "Time" : str(self.Time.isoformat()),
             "Status" : self.Status,
             "Location" : self.Location
         }
+        return obj
+        
