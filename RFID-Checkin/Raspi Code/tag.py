@@ -1,0 +1,27 @@
+'''
+Written by Dominique Stepek
+RFID Logging Software
+
+Description:
+Handles tags read by scanning manager as well as denotes the physical location of Raspberry PI.
+
+Edited on: January 31, 2019
+'''
+
+
+import datetime
+
+class tag:
+    def __init__(self, epc, status):
+        self.EPC = epc
+        self.Status = status
+        self.Location = "North Main Door" # Example location
+        self.Time = datetime.datetime.now()
+    def to_json(self):
+        return 
+        {
+            "EPC" : self.EPC,
+            "Timestamp" : self.Time.isoformat(),
+            "Status" : self.Status,
+            "Location" : self.Location
+        }
