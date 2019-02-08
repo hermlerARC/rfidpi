@@ -10,14 +10,12 @@ Edited on: January 31, 2019
 
 import paho.mqtt.publish as publish
 
-RASPI_ID = None # Unique ID to differentiate between different systems that are connected to the UI Client
-conn = None # Piped connection to scanning manager
 
 def reporting_manager(pipe, raspi_id):
     RASPI_ID = raspi_id
     conn = pipe
     
     while True:
-        json = conn.recv()
-        publish.single("reader/{}/active_tag".format(raspi_id), json, hostname="broker.hivemq.com", qos=1)
+        json = conn.recv() # Block thread until tag is scanned
+        publish.single("reader/{}/active_tag".format(raspi_id), json, hostname="broker.hivemq.com", qos=1) # Send tag(s) to topic
     

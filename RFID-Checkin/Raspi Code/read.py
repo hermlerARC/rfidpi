@@ -11,32 +11,27 @@ Edited on: January 31, 2019
 
 from multiprocessing import Process, Pipe
 import paho.mqtt.client as mqtt
-import reporting_manager, scanning_manager, json, mercury, os
+import reporting_manager, scanning_manager, json, mercury
 
 RASPI_ID = 'UPOGDU' # Unique ID to differentiate between different systems that are connected to the UI Client
-reporting_process_pid = None # Process that handles RFID tag read reporting to the MQTT Broker
-scanning_process_pid = None # Process that handles continuous checking off sensors and RFID reader
-processes = [] # Handles processes
+processes = [] # Handles processes that manage RFID tag reading and reporting to MQTT
+
+# Configure ThingMagic RFID Reader on USB0
+reader = mercury.Reader("tmr:///dev/ttyUSB0", baudrate=9600)
+reader.set_region('NA')
 
 def client_messaged(client, data, msg):
     # When 'read' is posted on the topic 'reader/{RASPI_ID}/status'
     # Initialize and start reporting_process and scanning_process
     if (msg.payload == b'read'):
-        print('starting processes...', end='')
         reporting_conn, scanner_conn = Pipe() # Connect two processes by pipe
         reporting_process = Process(target=reporting_manager.reporting_manager, args=(reporting_conn, RASPI_ID))
-        scanning_process = Process(target=scanning_manager.scanning_manager, args=(scanner_conn,))
+        scanning_process = Process(target=scanning_manager.scanning_manager, args=(scanner_conn, reader))
         reporting_process.start() 
         scanning_process.start()
-        processes.append(reporting_process)
-        processes.append(scanning_process)
-        print('started')
+        processes.extend((reporting_process, scanning_process))
     # Read for RFID tags and mark as heading 'in'. Publish to MQTT topic 'reader/{RASPI_ID}/active_tag'
     elif (msg.payload == b'read_once'):
-        print('reading')
-        reader = mercury.Reader("tmr:///dev/ttyUSB0", baudrate=9600)
-        reader.set_region('NA')
-        
         active_tags = scanning_manager.get_tags('in', reader)
         client.publish('reader/{}/active_tag'.format(RASPI_ID), json.dumps(active_tags), qos=1)
     # When 'stop' is posted on the topic 'reader/{RASPI_ID}/status'
@@ -44,8 +39,6 @@ def client_messaged(client, data, msg):
     elif (msg.payload == b'stop'):
         processes[0].terminate()
         processes[1].terminate()
-        print('processes stopped!')
-        
 
 def client_connected(client, data, flags, rc):
     print('connected to client on \'reader/{}/status\''.format(RASPI_ID))
