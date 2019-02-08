@@ -22,21 +22,18 @@ def client_messaged(client, data, msg):
     # When 'read' is posted on the topic 'reader/{RASPI_ID}/status'
     # Initialize and start reporting_process and scanning_process
     if (msg.payload == b'read'):
-        print('starting processes.', end='')
+        print('starting processes...', end='')
         reporting_conn, scanner_conn = Pipe() # Connect two processes by pipe
         reporting_process = Process(target=reporting_manager.reporting_manager, args=(reporting_conn, RASPI_ID))
-        print('.', end='')
         scanning_process = Process(target=scanning_manager.scanning_manager, args=(scanner_conn,))
-        print('.', end='')
         reporting_process.start() 
-        print('.', end='')
         scanning_process.start()
-        print('.', end='')
         processes.append(reporting_process)
         processes.append(scanning_process)
         print('started')
     # Read for RFID tags and mark as heading 'in'. Publish to MQTT topic 'reader/{RASPI_ID}/active_tag'
     elif (msg.payload == b'read_once'):
+        print('reading')
         reader = mercury.Reader("tmr:///dev/ttyUSB0", baudrate=9600)
         reader.set_region('NA')
         
