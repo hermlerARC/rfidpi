@@ -11,7 +11,7 @@ To read more about Mercury API for Python go to: https://github.com/gotthardp/py
 Edited on: January 31, 2019
 '''
 
-import datetime, json, mercury, Tag, time
+import datetime, json, mercury, Tag, time, sensors
 
 def get_tags(status, reader): 
     all_tags = []
@@ -43,11 +43,11 @@ def scanning_manager(pipe, reader):
 
     while True:
         if tripped_sensor == None:
-            if sensor_in.value < 1000: 
+            if get_sensor1_value() < 900: 
                 trip_time = datetime.datetime.now()
                 tripped_sensor = "in"
                 active_tags = tag.get_tags('out', reader) 
-            elif sensor_out.value < 1000: 
+            elif get_sensor2_value() < 1000: 
                 trip_time = datetime.datetime.now()
                 tripped_sensor = "out"
                 active_tags = tag.get_tags('in', reader) 
