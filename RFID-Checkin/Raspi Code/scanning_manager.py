@@ -11,7 +11,7 @@ To read more about Mercury API for Python go to: https://github.com/gotthardp/py
 Edited on: January 31, 2019
 '''
 
-import datetime, json, mercury, Tag
+import datetime, json, mercury, Tag, time
 
 def get_tags(status, reader): 
     all_tags = []
@@ -19,12 +19,11 @@ def get_tags(status, reader):
     
     for tag_data in all_tag_data: # Loop through each TagReadData object
         epc = str(tag_data.epc, 'utf-8')# Encode epc from byte to string
-        all_tags.append(Tag.tag(epc, status).to_json()) # Create tag object from epc and status and get json representation
+        all_tags.append(Tag.tag(epc, status, tag_data.rssi).to_json()) # Create tag object from epc and status and get json representation
         
     return all_tags
 
 def scanning_manager(pipe):
-
     # Connect to ThingMagic RFID Reader through USB
     # TODO: Figure out how to connect reader through USB
     reader = mercury.Reader("tmr:///dev/ttyUSB0", baudrate=9600)
@@ -47,19 +46,24 @@ def scanning_manager(pipe):
     tripped_sensor = None
     active_tags = []
 
+    #while True:
+        #if tripped_sensor == None:
+            #if input('in?') == 'y':#sensor_in.value < 1000: 
+                #trip_time = datetime.datetime.now()
+                #tripped_sensor = "in"
+                #active_tags = tag.get_tags('out', reader) 
+            #elif input('out') == 'y': #sensor_out.value < 1000: 
+                #trip_time = datetime.datetime.now()
+                #tripped_sensor = "out"
+                #active_tags = tag.get_tags('in', reader) 
+        #elif (datetime.datetime.now() - trip_time).total_seconds() < 3: 
+            #if (input('in?') == 'y' and tripped_sensor == 'out') or (input('out?') == 'y' and tripped_sensor == 'in'):#(sensor_in.value < 1000 and tripped_sensor == "out") or (sensor_out.value < 1000 and tripped_sensor == "in"):
+                #pipe.send(json.dumps(active_tags))
+        #else:
+            #trip_time = None
+            #tripped_sensor = None
+        
     while True:
-        if tripped_sensor == None:
-            if input('in?') == 'y':#sensor_in.value < 1000: 
-                trip_time = datetime.datetime.now()
-                tripped_sensor = "in"
-                active_tags = tag.get_tags('out', reader) 
-            elif input('out'?) == 'y': #sensor_out.value < 1000: 
-                trip_time = datetime.datetime.now()
-                tripped_sensor = "out"
-                active_tags = tag.get_tags('in', reader) 
-        elif (datetime.datetime.now() - trip_time).total_seconds() < 3: 
-            if (input('in?') == 'y' and tripped_sensor == 'out') or (input('out?') == 'y' and tripped_sensor == 'in'):#(sensor_in.value < 1000 and tripped_sensor == "out") or (sensor_out.value < 1000 and tripped_sensor == "in"):
-                pipe.send(json.dumps(active_tags))
-        else:
-            trip_time = None
-            tripped_sensor = None
+        active_tags = get_tags('out', reader)
+        pipe.send(json.dumps(active_tags))
+        time.sleep(1)
