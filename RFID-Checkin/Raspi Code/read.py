@@ -11,22 +11,30 @@ Edited on: January 31, 2019
 
 from multiprocessing import Process, Pipe
 import paho.mqtt.client as mqtt
-import reporting_manager, scanning_manager, json, mercury
+import reporting_manager, scanning_manager, json, mercury, os
 
 RASPI_ID = 'UPOGDU' # Unique ID to differentiate between different systems that are connected to the UI Client
-reporting_process = None # Process that handles RFID tag read reporting to the MQTT Broker
-scanning_process = None # Process that handles continuous checking off sensors and RFID reader
-
+reporting_process_pid = None # Process that handles RFID tag read reporting to the MQTT Broker
+scanning_process_pid = None # Process that handles continuous checking off sensors and RFID reader
+processes = [] # Handles processes
 
 def client_messaged(client, data, msg):
     # When 'read' is posted on the topic 'reader/{RASPI_ID}/status'
     # Initialize and start reporting_process and scanning_process
-    if (msg.payload == b'read'): 
+    if (msg.payload == b'read'):
+        print('starting processes.', end='')
         reporting_conn, scanner_conn = Pipe() # Connect two processes by pipe
         reporting_process = Process(target=reporting_manager.reporting_manager, args=(reporting_conn, RASPI_ID))
+        print('.', end='')
         scanning_process = Process(target=scanning_manager.scanning_manager, args=(scanner_conn,))
+        print('.', end='')
         reporting_process.start() 
+        print('.', end='')
         scanning_process.start()
+        print('.', end='')
+        processes.append(reporting_process)
+        processes.append(scanning_process)
+        print('started')
     # Read for RFID tags and mark as heading 'in'. Publish to MQTT topic 'reader/{RASPI_ID}/active_tag'
     elif (msg.payload == b'read_once'):
         reader = mercury.Reader("tmr:///dev/ttyUSB0", baudrate=9600)
@@ -37,18 +45,13 @@ def client_messaged(client, data, msg):
     # When 'stop' is posted on the topic 'reader/{RASPI_ID}/status'
     # Kill reporting_process and scanning_process
     elif (msg.payload == b'stop'):
-        reporting_process.terminate()
-        print(reporting_process)
-        if reporting_process != None:
-            reporting_process.terminate()
-            reporting_process = None
-        if scanning_process != None:
-            scanning_process.terminate()
-            scanning_process = None
-        print('processes killed')
+        processes[0].terminate()
+        processes[1].terminate()
+        print('processes stopped!')
+        
 
 def client_connected(client, data, flags, rc):
-    print('connected on ' + str(rc))
+    print('connected to client on \'reader/{}/status\''.format(RASPI_ID))
     client.subscribe('reader/{}/status'.format(RASPI_ID)) # Setup client to receive messages posted on 'reader/{RASPI_ID}/status' topic
 
 if __name__ == '__main__':

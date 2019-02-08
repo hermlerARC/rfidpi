@@ -19,6 +19,5 @@ def reporting_manager(pipe, raspi_id):
     
     while True:
         json = conn.recv()
-        print(json)
         publish.single("reader/{}/active_tag".format(raspi_id), json, hostname="broker.hivemq.com", qos=1)
     
