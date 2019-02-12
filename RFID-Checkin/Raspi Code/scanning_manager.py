@@ -11,11 +11,11 @@ To read more about Mercury API for Python go to: https://github.com/gotthardp/py
 Edited on: January 31, 2019
 '''
 
-import datetime, json, mercury, Tag, time, sensors
+import datetime, json, Tag, time, board
+from adafruit_hcsr04 import HCSR04
 
-def get_tags(status, reader): 
+def create_tags(all_tag_data, status):
     all_tags = []
-    all_tag_data = reader.read() # Read every tag near RFID reader
     
     for tag_data in all_tag_data: # Loop through each TagReadData object
         epc = str(tag_data.epc, 'utf-8')# Encode epc from byte to string
@@ -23,37 +23,40 @@ def get_tags(status, reader):
         
     return all_tags
 
-def scanning_manager(pipe, reader):
-    '''
-    ~~~ Tag Reading Algorithm ~~~
-
-    1. Check if either the inside or outside sensor has been previously tripped, if so skip to Step 4.
-    2. If no sensor has been previously tripped, check if either sensor is currently tripped
-    3. If a sensor is currently tripped, store time in a variable, note that the sensor has been tripped,
-        read and store RFID tags. Go to Step 1
-    4. If a sensor has been previously tripped and the time between the current and past trip time is less
-        than 3 seconds, continue to Step 5. Otherwise, reset previous trip time and tripped sensor. Go to Step 1
-    5. If a sensor is currently being tripped and the previous tripped sensor is the opposite sensor,
-        send the stored RFID tags over the pipe. Go to Step 1
-    '''
-
-    trip_time = None
-    tripped_sensor = None
-    active_tags = []
-
-    while True:
-        if tripped_sensor == None:
-            if get_sensor1_value() < 900: 
-                trip_time = datetime.datetime.now()
-                tripped_sensor = "in"
-                active_tags = tag.get_tags('out', reader) 
-            elif get_sensor2_value() < 1000: 
-                trip_time = datetime.datetime.now()
-                tripped_sensor = "out"
-                active_tags = tag.get_tags('in', reader) 
-        elif (datetime.datetime.now() - trip_time).total_seconds() < 3: 
-            if (sensor_in.value < 1000 and tripped_sensor == "out") or (sensor_out.value < 1000 and tripped_sensor == "in"):
-                pipe.send(json.dumps(active_tags))
-        else:
-            trip_time = None
-            tripped_sensor = None
+def scanning_manager(pipe, read_pipe):
+	sonar1 = HCSR04(trigger_pin=board.D18,echo_pin=board.D24)
+	sonar2 = HCSR04(trigger_pin=board.D17,echo_pin=board.D23)
+	
+	trip_time = None
+	tripped_sensor = None
+	active_tags = []
+	
+	while True:
+		s1_val = sonar1.distance
+		s2_val = sonar2.distance
+		print(s1_val)
+		print(s2_val)
+		
+		'''
+		if tripped_sensor == None:
+			if s1_val < 150:
+				trip_time = datetime.datetime.now()
+				tripped_sensor = 'in'
+			elif s2_val < 150:
+				trip_time = datetime.datetime.now()
+				tripped_sensor = 'out'
+		elif (datetime.datetime.now() - trip_time).total_seconds() < 3:
+			if s1_val < 150 and tripped_sensor == 'out':
+				#pipe.send(create_tags(read_pipe.recv(), 'in'))
+				print('heading in')
+				tripped_sensor = None
+				trip_time = None
+			elif s2_val < 150 and tripped_sensor == 'in':
+				#pipe.send(create_tags(read_pipe.recv(), 'out'))
+				print('heading out')
+				tripped_sensor = None
+				trip_time = None
+		else:
+			tripped_sensor = None
+			trip_time = None
+		'''
