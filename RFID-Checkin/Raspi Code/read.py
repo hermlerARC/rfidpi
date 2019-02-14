@@ -11,7 +11,7 @@ Edited on: January 31, 2019
 
 from multiprocessing import Process, Pipe
 import paho.mqtt.client as mqtt
-import reporting_manager, scanning_manager, reading_manager, json, mercury
+import reporting_manager, scanning_manager, reading_manager, json, mercury, sensors
 
 RASPI_ID = 'UPOGDU' # Unique ID to differentiate between different systems that are connected to the UI Client
 processes = [] # Handles processes that manage RFID tag reading and reporting to MQTT
@@ -51,6 +51,10 @@ def client_messaged(client, data, msg):
         processes[0].terminate()
         processes[1].terminate()
         processes[2].terminate()
+        
+    elif (msg.payload == b'test'):
+        sensors.test_sensors(100)
+        print('Begin testing... press control+c to stop')
 
 def client_connected(client, data, flags, rc):
     print('connected to client on \'reader/{}/status\''.format(RASPI_ID))
