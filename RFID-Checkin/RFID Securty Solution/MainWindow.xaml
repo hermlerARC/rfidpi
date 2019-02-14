@@ -68,6 +68,8 @@
                             <GridView/>
                         </ListView.View>
                     </ListView>
+                    <Label x:Name="scannerTagLabel" Content="Scanner:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="389,10,0,0"/>
+                    <ComboBox x:Name="scannerTabCombobox" HorizontalAlignment="Left" VerticalAlignment="Top" Width="330" Margin="444,12,0,0"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Log IDs">
@@ -84,6 +86,18 @@
                     </ListView>
                     <Label x:Name="serviceStatusLabel" Content="Service Status:" HorizontalAlignment="Left" Margin="94,7,0,0" VerticalAlignment="Top"/>
                     <Label x:Name="serviceLabel" Content="stopped" HorizontalAlignment="Left" Margin="184,7,0,0" VerticalAlignment="Top" Foreground="Red"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Reader">
+                <Grid Background="White">
+                    <ListView x:Name="readersListView" Height="331" VerticalAlignment="Bottom">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
                 </Grid>
             </TabItem>
         </TabControl>

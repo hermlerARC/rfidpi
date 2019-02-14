@@ -59,9 +59,6 @@
     <Reference Include="Google.Apis.Sheets.v4, Version=1.36.1.1399, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
       <HintPath>..\packages\Google.Apis.Sheets.v4.1.36.1.1399\lib\net45\Google.Apis.Sheets.v4.dll</HintPath>
     </Reference>
-    <Reference Include="MercuryAPI">
-      <HintPath>..\..\RFID Security Logger\RFID Security Logger\MercuryAPI.dll</HintPath>
-    </Reference>
     <Reference Include="MQTTnet, Version=2.8.4.0, Culture=neutral, PublicKeyToken=b69712f52770c0a7, processorArchitecture=MSIL">
       <HintPath>..\packages\MQTTnet.2.8.4\lib\net461\MQTTnet.dll</HintPath>
     </Reference>
