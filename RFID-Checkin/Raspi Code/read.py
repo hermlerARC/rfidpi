@@ -15,10 +15,17 @@ import reporting_manager, scanning_manager, reading_manager, json, mercury, sens
 
 RASPI_ID = 'UPOGDU' # Unique ID to differentiate between different systems that are connected to the UI Client
 processes = [] # Handles processes that manage RFID tag reading and reporting to MQTT
-
+reader_connected = False
+reader_port = 0
 # Configure ThingMagic RFID Reader on USB0
-reader = mercury.Reader("tmr:///dev/ttyUSB0", baudrate=9600)
-reader.set_region('NA')
+
+while not reader_connected:
+	try:
+		reader = mercury.Reader("tmr:///dev/ttyUSB{}".format(reader_port), baudrate=9600)
+		reader.set_region('NA')
+		reader_connected = True
+	except:
+		reader_port = reader_port + 1
 
 def client_messaged(client, data, msg):
     # When 'read' is posted on the topic 'reader/{RASPI_ID}/status'
@@ -41,7 +48,8 @@ def client_messaged(client, data, msg):
     # Read for RFID tags and mark as heading 'in'. Publish to MQTT topic 'reader/{RASPI_ID}/active_tag'
     
     elif (msg.payload == b'read_once'):
-        active_tags = scanning_manager.get_tags('in', reader)
+        tag_data = reading_manager.read_once(reader)
+        active_tags = scanning_manager.create_tags(tag_data, 0)
         client.publish('reader/{}/active_tag'.format(RASPI_ID), json.dumps(active_tags), qos=1)
         
     # When 'stop' is posted on the topic 'reader/{RASPI_ID}/status'

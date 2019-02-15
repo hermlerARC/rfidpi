@@ -36,13 +36,13 @@ def scanning_manager(pipe, read_pipe):
 			exit_loop = False
 			while (datetime.datetime.now() - ctime).total_seconds() < 3 and not exit_loop:
 				if (sensors.get_sensor2_value() < threshold):
-					pipe.send(json.dumps(create_tags(read_pipe.recv(), 'out')))
-					time.sleep(.001)
+					pipe.send(json.dumps(create_tags(read_pipe.recv(), 1)))
+					time.sleep(.01)
 					
 		if sensors.get_sensor2_value() < threshold:
 			exit_loop = False
 			while (datetime.datetime.now() - ctime).total_seconds() < 3 and not exit_loop:
 				if (sensors.get_sensor1_value() < threshold):
-					pipe.send(json.dumps(create_tags(read_pipe.recv(), 'in')))
-					time.sleep(.001)
-		time.sleep(.001)
+					pipe.send(json.dumps(create_tags(read_pipe.recv(), 0)))
+					time.sleep(.01)
+		time.sleep(.01)
