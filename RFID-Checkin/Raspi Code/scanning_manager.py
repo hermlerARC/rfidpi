@@ -29,6 +29,7 @@ def scanning_manager(pipe, read_pipe):
 	threshold_distance = 100 # Max distance to read in centimeters before sensors are considered 'tripped'.
 	threshold_time = 3 # Max seconds to wait for object to pass both sensors.
 	sleep_time = threshold_distance / SPEED_OF_SOUND # Wait time before each call to sensors.get_sensor_value() to allow for sensors to read properly
+	
 	'''
 	~~ Tag Reading Algorithm ~~
 	1. Get current time and store in a variable 'x'
@@ -37,7 +38,6 @@ def scanning_manager(pipe, read_pipe):
 	4. If other sensor reads below a threshold distance, read for RFID tags and send to reporting_manager tags marked with the last sensor tripped.
 	5. Pause script for a sleep time and go to step 3.
 	6. Pause script for a sleep time and go to step 2.
-
 	'''
 	
 	while True:
