@@ -40,7 +40,7 @@ namespace RFID_Securty_Solution
             populateListView(spreadsheetPreviewListView, allIDS);
             shared = !string.IsNullOrWhiteSpace(Properties.Settings.Default.SpreadsheetID);
 
-            scannerTabCombobox.DisplayMemberPath = "Value";
+            scannerTabCombobox.DisplayMemberPath = "Location";
             scannerTabCombobox.DataContext = allReaders;
 
             if (shared) serviceLogin();
@@ -70,15 +70,19 @@ namespace RFID_Securty_Solution
         private IMqttClient rfid_scanner_client;
         private IMqttClientOptions rfid_scanner_options;
 
-        private async void signInButton_Click(object sender, RoutedEventArgs e)
+        private void signInButton_Click(object sender, RoutedEventArgs e)
         {
-            Properties.Settings.Default.Save();
             userLogin();
-            if (Regex.IsMatch(spreadsheetIDTextBox.Text, @"[-\w]{25,}"))
+            LoadAllSpreadsheetData();
+        }
+
+        private async void LoadAllSpreadsheetData()
+        {
+            if (Regex.IsMatch(spreadsheetIDTextBox.Text, @"[-\w]{25,}") && logged_in)
             {
                 useExistingSpreadsheetLoadingPictureBox.Visibility = Visibility.Visible;
                 allIDS.Clear();
-                var spreadsheetID = spreadsheetIDTextBox.Text;
+                var spreadsheetID = Regex.Match(spreadsheetIDTextBox.Text, @"\/?([-\w]{25,})\/?").Groups[1].Value;
                 shareSpreadsheet(spreadsheetID);
 
                 var idVals = await getValuesFromSpreadsheet(spreadsheetID, "ids");
@@ -99,8 +103,8 @@ namespace RFID_Securty_Solution
                     for (var i = 1; i < logVals.Count; i++)
                     {
                         Enum.TryParse((string)logVals[i][1], out Status stat);
-                        DateTime.TryParse((string)logVals[i][0], out DateTime timeStamp);
-                        allLogs.Add(new Log(timeStamp, stat, (string)logVals[i][2], (string)logVals[i][3], (string)logVals[i][4], (string)logVals[i][5]));
+                        var timeStamp = (DateTime)logVals[i][0];
+                        allLogs.Add(new Log(timeStamp, stat, (string)logVals[i][2], (string)logVals[i][3], (string)logVals[i][4], (string)logVals[i][5], (string)logVals[i][6]));
                     }
                 }
 
@@ -108,7 +112,7 @@ namespace RFID_Securty_Solution
                 {
                     for (var i = 1; i < readers.Count; i++)
                     {
-                        allReaders.Add((string)readers[i][0], (string)readers[i][1]);
+                        allReaders.Add(new Reader() { ID = (string)readers[i][0], Location = (string)readers[i][1] });
                     }
                 }
 
@@ -116,67 +120,23 @@ namespace RFID_Securty_Solution
                 populateListView(viewSpreadsheetListView, allIDS);
                 populateListView(logSpreadsheetListView, allLogs);
                 populateListView(readersListView, allReaders);
-                scannerTabCombobox.DataContext = allReaders;
+                scannerTabCombobox.ItemsSource = allReaders;
+                if (allReaders.Count > 0) scannerTabCombobox.SelectedIndex = 1;
                 useExistingSpreadsheetLoadingPictureBox.Visibility = Visibility.Hidden;
             }
         }
 
-        private async void spreadsheetIDTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (Regex.IsMatch(spreadsheetIDTextBox.Text, @"[-\w]{25,}") && logged_in)
-            {
-                useExistingSpreadsheetLoadingPictureBox.Visibility = Visibility.Visible;
-                allIDS.Clear();
-                var spreadsheetID = spreadsheetIDTextBox.Text;
-                shareSpreadsheet(spreadsheetID);
-
-                var idVals = await getValuesFromSpreadsheet(spreadsheetID, "ids");
-                var logVals = await getValuesFromSpreadsheet(spreadsheetID, "log");
-                var readers = await getValuesFromSpreadsheet(spreadsheetID, "readers");
-
-                if (idVals != null && idVals.Count > 1)
-                {
-                    for (var i = 1; i < idVals.Count; i++)
-                    {
-                        Enum.TryParse((string)idVals[i][1], out Status stat);
-                        allIDS.Add(new ID((string)idVals[i][0], stat, (string)idVals[i][2], (string)idVals[i][3], (string)idVals[i][4]));
-                    }
-                }
-
-                if (logVals != null && logVals.Count > 1)
-                {
-                    for (var i = 1; i < logVals.Count; i++)
-                    {
-                        Enum.TryParse((string)logVals[i][1], out Status stat);
-                        DateTime.TryParse((string)logVals[i][0], out DateTime timeStamp);
-                        allLogs.Add(new Log(timeStamp, stat, (string)logVals[i][2], (string)logVals[i][3], (string)logVals[i][4], (string)logVals[i][5]));
-                    }
-                }
-
-                if (readers != null && readers.Count > 1)
-                {
-                    for (var i = 1; i < readers.Count; i++)
-                    {
-                        allReaders.Add((string)readers[i][0], (string)readers[i][1]);
-                    }
-                }
-
-                populateListView(spreadsheetPreviewListView, allIDS);
-                populateListView(viewSpreadsheetListView, allIDS);
-                populateListView(logSpreadsheetListView, allLogs);
-                scannerTabCombobox.DataContext = allReaders;
-                useExistingSpreadsheetLoadingPictureBox.Visibility = Visibility.Hidden;
-            }
-        }
+        private void spreadsheetIDTextBox_TextChanged(object sender, TextChangedEventArgs e) => LoadAllSpreadsheetData();
 
         private void createNewSpreadsheetButton_Click(object sender, RoutedEventArgs e)
         {
             Sheet idSheet = new Sheet { Properties = new SheetProperties { Title = "ids" } };
             Sheet logSheet = new Sheet { Properties = new SheetProperties { Title = "log" } };
+            Sheet readersSheet = new Sheet { Properties = new SheetProperties { Title = "readers" } };
             Spreadsheet requestBody = new Spreadsheet
             {
                 Properties = new SpreadsheetProperties(),
-                Sheets = new List<Sheet> { idSheet, logSheet }
+                Sheets = new List<Sheet> { idSheet, logSheet, readersSheet }
             };
             requestBody.Properties.Title = spreadsheetNameTextbox.Text;
 
@@ -184,7 +144,8 @@ namespace RFID_Securty_Solution
 
             var spreadSheet = request.Execute();
             appendNewRow(spreadSheet.SpreadsheetId, "ids", "EPC", "Status", "Owner", "Description", "Extra");
-            appendNewRow(spreadSheet.SpreadsheetId, "log", "Time", "Status", "EPC", "Owner", "Description", "Extra");
+            appendNewRow(spreadSheet.SpreadsheetId, "log", "Time", "Status", "EPC", "Owner", "Description", "Location", "Extra");
+            appendNewRow(spreadSheet.SpreadsheetId, "readers", "ID", "Location");
             spreadsheetIDTextBox.Text = spreadSheet.SpreadsheetId;
         }
 
@@ -202,29 +163,39 @@ namespace RFID_Securty_Solution
         {
             var index = viewSpreadsheetListView.SelectedIndex;
 
-            var values = new List<object>()
+            if (index != -1)
             {
-                activeTagTextbox.Text,
-                ((Status)tagStatusComboBox.SelectedIndex).ToString(),
-                tagOwnerTextbox.Text,
-                tagDescriptionTextbox.Text,
-                tagExtraTextbox.Text,
-            };
-
-            allIDS[index].Status = (Status)tagStatusComboBox.SelectedIndex;
-            allIDS[index].Owner = (string)values[2];
-            allIDS[index].Description = (string)values[3];
-            allIDS[index].Extra = (string)values[4];
-            populateListView(viewSpreadsheetListView, allIDS);
-            updateCells(spreadsheetIDTextBox.Text, $"ids!a{index + 2}:e{index + 2}", values);
+                allIDS[index].Status = (Status)tagStatusComboBox.SelectedIndex;
+                allIDS[index].Owner = tagOwnerTextbox.Text;
+                allIDS[index].Description = tagDescriptionTextbox.Text;
+                allIDS[index].Extra = tagExtraTextbox.Text;
+                populateListView(viewSpreadsheetListView, allIDS);
+                updateCells(spreadsheetIDTextBox.Text, $"ids!a{index + 2}:e{index + 2}", allIDS[index].Values);
+            } 
+            else
+            {
+                allIDS.Add(new ID(
+                    activeTagTextbox.Text,
+                    (Status)tagStatusComboBox.SelectedIndex,
+                    tagOwnerTextbox.Text,
+                    tagDescriptionTextbox.Text, 
+                    tagExtraTextbox.Text));
+                appendNewRow(Properties.Settings.Default.SpreadsheetID, "ids", allIDS[allIDS.Count - 1].Values);
+            }
         }
 
         private async void rescanAssignIDsButton_Click(object sender, RoutedEventArgs e)
         {
-            var active_tag = await RFIDScanner.Scan(rfid_scanner_client, rfid_scanner_options, scannerTabCombobox.Text);
+            if (allReaders.FindIndex(x => x.Location == scannerTabCombobox.Text) == -1)
+            {
+                MessageBox.Show("Cannot find reader. Please select a valid reader.", "RFID Security Solution", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            var active_tag = await RFIDScanner.Scan(rfid_scanner_client, rfid_scanner_options, allReaders[scannerTabCombobox.SelectedIndex].ID);
             activeTagTextbox.Text = active_tag.EPC;
             var index = allIDS.FindIndex(x => x.EPC == active_tag.EPC);
             if (index > -1) viewSpreadsheetListView.SelectedIndex = index;
+            else tagStatusComboBox.SelectedIndex = 0;
         }
 
         /// <summary>
@@ -367,6 +338,7 @@ namespace RFID_Securty_Solution
             gridView.Columns.Add(new GridViewColumn() { Header = "EPC", DisplayMemberBinding = new Binding("EPC") });
             gridView.Columns.Add(new GridViewColumn() { Header = "Owner", DisplayMemberBinding = new Binding("Owner") });
             gridView.Columns.Add(new GridViewColumn() { Header = "Description", DisplayMemberBinding = new Binding("Description") });
+            gridView.Columns.Add(new GridViewColumn() { Header = "Location", DisplayMemberBinding = new Binding("Location") });
             gridView.Columns.Add(new GridViewColumn() { Header = "Extra", DisplayMemberBinding = new Binding("Extra") });
             lv.ItemsSource = log;
         }
@@ -376,6 +348,8 @@ namespace RFID_Securty_Solution
             var gridView = new GridView();
             lv.View = gridView;
             gridView.Columns.Add(new GridViewColumn() { Header = "ID", DisplayMemberBinding = new Binding("ID") });
+            gridView.Columns.Add(new GridViewColumn() { Header = "Location", DisplayMemberBinding = new Binding("Location") });
+            lv.ItemsSource = readers;
         }
 
         private async void updateCells(string spreadsheetID, string range, IList<object> value)
@@ -391,7 +365,7 @@ namespace RFID_Securty_Solution
             updateRowPictureBox.Visibility = Visibility.Hidden;
         }
 
-        private async void starStopServiceButton_Click(object sender, RoutedEventArgs e)
+        private async void startStopServiceButton_Click(object sender, RoutedEventArgs e)
         {
             logging = !logging;
             if (logging)
@@ -399,26 +373,36 @@ namespace RFID_Securty_Solution
                 serviceLabel.Content = "starting";
                 serviceLabel.Foreground = new SolidColorBrush(Colors.Blue);
 
-                await RFIDScanner.Log((tags, locations) =>
+                await RFIDScanner.Log((tags, location) =>
                 {
-                    foreach (var tag in tags)
+                    Dispatcher.Invoke(() =>
                     {
-                        var index = allIDS.FindIndex(id => id.EPC == tag.EPC);
-                        if (index == -1) continue;
-                        var log = new Log(tag.Timestamp, tag.Status, tag.EPC, allIDS[index].Owner, allIDS[index].Description, allIDS[index].Extra);
+                        foreach (var tag in tags)
+                        {
+                            var index = allIDS.FindIndex(id => id.EPC == tag.EPC);
+                            if (index == -1) continue;
+                            var log = new Log(tag.Time, tag.Status, tag.EPC, allIDS[index].Owner, allIDS[index].Description, location, allIDS[index].Extra);
 
-                        allLogs.Add(log);
-                        appendNewRow(Properties.Settings.Default.SpreadsheetID, "log", log.TimeStamp, log.Status, log.EPC, log.Owner, log.Description, log.Extra);
+                            allLogs.Add(log);
+                            allIDS[index].Status = log.Status;
+
+                            appendNewRow(Properties.Settings.Default.SpreadsheetID, "log", log.TimeStamp, log.Status, log.EPC, log.Owner, log.Description, log.Location, log.Extra);
+                            updateCells(spreadsheetIDTextBox.Text, $"ids!a{index + 2}:e{index + 2}", allIDS[index].Values);
+                        }
                         populateListView(logSpreadsheetListView, allLogs);
-                    }
-                }, rfid_scanner_client, rfid_scanner_options, allReaders.Keys.ToList());
+                        populateListView(spreadsheetPreviewListView, allIDS);
+                        populateListView(viewSpreadsheetListView, allIDS);
+                    });   
+                }, rfid_scanner_client, rfid_scanner_options, allReaders.Select(x => x.ID).ToList());
+            
+                
                 serviceLabel.Content = "logging";
                 serviceLabel.Foreground = new SolidColorBrush(Colors.Green);
             } else
             {
                 serviceLabel.Content = "stopping";
                 serviceLabel.Foreground = new SolidColorBrush(Colors.Blue);
-                RFIDScanner.Dispose(rfid_scanner_client, allReaders.Keys.ToList());
+                RFIDScanner.Dispose(rfid_scanner_client, allReaders.Select(x => x.ID).ToList());
                 serviceLabel.Content = "stopped";
                 serviceLabel.Foreground = new SolidColorBrush(Colors.Red);
             }
@@ -432,6 +416,14 @@ namespace RFID_Securty_Solution
         public string Owner { get; set; }
         public string Description { get; set; }
         public string Extra { get; set; }
+
+        public List<object> Values
+        {
+            get
+            {
+                return new List<object> { EPC, Status.ToString(), Owner, Description, Extra };
+            }
+        }
 
         public ID(string epc, Status status, string owner, string description, string extra = "")
         {

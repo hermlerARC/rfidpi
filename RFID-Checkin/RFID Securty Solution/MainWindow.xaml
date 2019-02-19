@@ -20,7 +20,7 @@
                     <Label x:Name="spreadsheetIDLabel" HorizontalAlignment="Left" Margin="29,30,0,0"  Content="Spreadsheet ID:" VerticalAlignment="Top"/>
                     <Button x:Name="signInButton" Content="Login With Google" HorizontalAlignment="Left" Margin="647,41,0,0" VerticalAlignment="Top" Height="24" Width="127" Click="signInButton_Click"/>
                     <RadioButton x:Name="useExistingSpreadsheetRadioButton" Content="Use Existing Spreadsheet" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" IsChecked="True"/>
-                    <TextBox x:Name="spreadsheetIDTextBox" HorizontalAlignment="Left" Height="23" Margin="147,30,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="353" IsEnabled="{Binding IsChecked, ElementName=useExistingSpreadsheetRadioButton}" TextChanged="spreadsheetIDTextBox_TextChanged"/>
+                    <TextBox x:Name="spreadsheetIDTextBox" HorizontalAlignment="Left" Height="23" Margin="147,30,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="353" IsEnabled="{Binding IsChecked, ElementName=useExistingSpreadsheetRadioButton}" TextChanged="spreadsheetIDTextBox_TextChanged"/>
                     <RadioButton x:Name="createNewSpreadsheetRadioButton" Content="Create New Spreadsheet" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,61,0,0"/>
                     <TextBox x:Name="spreadsheetNameTextbox" HorizontalAlignment="Left" Height="23" Margin="147,84,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="273" IsEnabled="{Binding IsChecked, ElementName=createNewSpreadsheetRadioButton}"/>
                     <Label x:Name="speadsheetNameLabel" HorizontalAlignment="Left" Margin="29,81,0,0" Content="Spreadsheet Name:" VerticalAlignment="Top"/>
@@ -74,7 +74,7 @@
             </TabItem>
             <TabItem Header="Log IDs">
                 <Grid Background="White">
-                    <Button x:Name="startStopServiceButton" Content="Start/Stop" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="79" Click="starStopServiceButton_Click"/>
+                    <Button x:Name="startStopServiceButton" Content="Start/Stop" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="79" Click="startStopServiceButton_Click"/>
                     <Separator  Height="12" Margin="10,35,10,0" VerticalAlignment="Top" />
                     <Label x:Name="logSheetPreviewLabel" Content="Log Spreadsheet:" HorizontalAlignment="Left" Margin="10,52,0,0" VerticalAlignment="Top"/>
                     <ListView x:Name="logSpreadsheetListView" Height="331" VerticalAlignment="Bottom">
