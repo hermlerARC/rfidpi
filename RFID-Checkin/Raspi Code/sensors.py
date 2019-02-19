@@ -1,72 +1,75 @@
+'''
+RFID Logging Software
+
+Description (sensors.py):
+Handles sensors that detect whether RFID tag is leaving or entering structure and reports to the
+reporting manager which tags are read.
+
+Contributors:
+Dom Stepek, Gavin Furlong
+
+Source code: https://tutorials-raspberrypi.com/raspberry-pi-ultrasonic-sensor-hc-sr04/
+
+Edited on: February 19, 2019
+'''
+
 import RPi.GPIO as GPIO
 import time, datetime
- 
-SENSOR1_PINS = [18,24]
-SENSOR2_PINS = [17,23]
 
-def get_sensor1_value():
+IN_PINS = [18,24]
+OUT_PINS = [17,23]
 
-    GPIO.output(SENSOR1_PINS[0], True)
-    time.sleep(0.00001)
-    GPIO.output(SENSOR1_PINS[0], False)
+def get_sensor_value(sensor):
+	# Read from either IN_PINS or OUT_PINS
+	pins = IN_PINS if sensor == 'in' else OUT_PINS
+	
+	# Set 'Trigger' pin to HIGH
+	GPIO.output(pins[0], True)
+	
+	# Set 'Trigger' pin after 0.01ms to LOW
+	time.sleep(0.00001)
+	GPIO.output(pins[0], False)
 
-    while GPIO.input(SENSOR1_PINS[1]) == 0:
-        pulse_start = time.time()
-        
-     
-    while GPIO.input(SENSOR1_PINS[1]) == 1:
-        pulse_end = time.time()
+	start_time = time.time()
+	stop_time = time.time()
 
-    pulse_duration = pulse_end - pulse_start
+	# Save start_time
+	while GPIO.input(pins[1]) == 0:
+		start_time = time.time()
+		
+	# Save time of arrival
+	while GPIO.input(pins[1]) == 1:
+		stop_time = time.time()
 
-    distance = pulse_duration * 17150
-    distance = round(distance, 2)
-    
-    return distance
-    
-def get_sensor2_value():
-    GPIO.output(SENSOR2_PINS[0], True)
-    time.sleep(0.00001)
-    GPIO.output(SENSOR2_PINS[0], False)
+	# Time between start_time and time of arrival
+	time_elapsed = stop_time - start_time
 
-    while GPIO.input(SENSOR2_PINS[1]) == 0:
-        pulse_start = time.time()
-        
-     
-    while GPIO.input(SENSOR2_PINS[1]) == 1:
-        pulse_end = time.time()
+	# Multiply time_elapsed by speed of sound divided by two because sound traveled the distance to object and back.
+	distance = time_elapsed * 17150
+	
+	return distance
 
-    pulse_duration = pulse_end - pulse_start
-
-    distance = pulse_duration * 17150
-    distance = round(distance, 2)
-    
-    return distance
 
 def setup():
-    GPIO.setwarnings(False)
-    GPIO.setmode(GPIO.BCM)
+	GPIO.setwarnings(False)
+	GPIO.setmode(GPIO.BCM)
 
-    GPIO.setup(SENSOR1_PINS[0], GPIO.OUT)
-    GPIO.setup(SENSOR2_PINS[0], GPIO.OUT)
-    
-    GPIO.setup(SENSOR1_PINS[1], GPIO.IN)
-    GPIO.setup(SENSOR2_PINS[1], GPIO.IN)
-    
-    GPIO.output(SENSOR1_PINS[0], False)
-    GPIO.output(SENSOR2_PINS[0], False)
-    
-    time.sleep(2)
-
-
+	# Set GPIO directions (IN / OUT)
+	GPIO.setup(IN_PINS[0], GPIO.OUT)
+	GPIO.setup(OUT_PINS[0], GPIO.OUT)
+	
+	GPIO.setup(IN_PINS[1], GPIO.IN)
+	GPIO.setup(OUT_PINS[1], GPIO.IN)
+	
+	time.sleep(2)
 
 def test_sensors(threshold = 100):
 	setup()
 	try:
 		print('Time\tSensor\tValue')
 		while True:
-			v1 = get_sensor1_value()
-			v2 = get_sensor2_value()
+			v1 = get_sensor_value('in')
+			v2 = get_sensor_value('out')
 			t = str(datetime.datetime.now().isoformat())
 			
 			if (v1 < threshold):

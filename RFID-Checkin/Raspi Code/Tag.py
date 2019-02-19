@@ -1,11 +1,13 @@
 '''
-Written by Dominique Stepek
 RFID Logging Software
 
-Description:
+Description (Tags.py):
 Handles tags read by scanning manager as well as denotes the physical location of Raspberry PI.
 
-Edited on: January 31, 2019
+Contributors:
+Dom Stepek, Gavin Furlong
+
+Edited on: February 19, 2019
 '''
 
 

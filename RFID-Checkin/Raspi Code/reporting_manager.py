@@ -1,11 +1,13 @@
 '''
-Written by Dominique Stepek
 RFID Logging Software
 
-Description:
+Description (reporting_manager.py):
 Receives tags from scanning manager and reports the tags to the UI client through MQTT broker.
 
-Edited on: January 31, 2019
+Contributors:
+Dom Stepek, Gavin Furlong
+
+Edited on: February 19, 2019
 '''
 
 import paho.mqtt.publish as publish
