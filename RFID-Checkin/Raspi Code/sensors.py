@@ -64,21 +64,20 @@ def setup():
 	time.sleep(2)
 
 def test_sensors(threshold = 100):
-	setup()
-	try:
-		print('Time\tSensor\tValue')
-		while True:
-			v1 = get_sensor_value('in')
-			v2 = get_sensor_value('out')
-			t = str(datetime.datetime.now().isoformat())
-			
-			if (v1 < threshold):
-				print(t + '\t1\t' + str(v1) + " cm")
-			if (v2 < threshold):
-				print(t + '\t2\t' + str(v2) + " cm")
-			
-			time.sleep(.25)
-	except KeyboardInterrupt:
-		print('Stopped tests.')
-		pass
+    setup()
+    try:
+        print('Time\tSensor\tValue')
+        while True:
+            v1 = get_sensor_value('in')
+            v2 = get_sensor_value('out')
+            t = str(datetime.datetime.now().isoformat())
+            
+            if (v1 < threshold):
+                print(t + '\t1\t' + str(v1) + " cm")
+            if (v2 < threshold):
+                print(t + '\t2\t' + str(v2) + " cm")
+            
+            time.sleep(.25)
+    except KeyboardInterrupt:
+        print('Stopped tests.')
 
