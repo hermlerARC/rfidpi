@@ -13,9 +13,9 @@ Edited on: February 19, 2019
 '''
 
 import mercury, time, threading
-from queue import Queue
 
-tag_queue = Queue()
+lock = threading.Lock() # Blocks thread when accessing tags list
+tags = [] # List that holds tags to send to scanning_manager
 
 def read_once(reader):
     all_tags = []
@@ -37,15 +37,27 @@ def test_reader(reader):
         print('Ending RFID reader test.')
         
 def read(reader):
+    global tags
     while True:
-        tag_queue.put(read_once(reader))
+        current_tags = read_once(reader) # Reads EPCs and RSSIs from RFID reader
+        
+        lock.acquire(False)
+        
+        # Prevent tags list from taking too much memory by maximizing its size to 10 objects
+        if len(tags) > 10: 
+            tags.pop(0)
+            
+        tags.append(current_tags)
+        lock.release()
+        time.sleep(0.5)
 
 def reading_manager(pipe, reader):
+    global tags
     t = threading.Thread(target=read, args=(reader,))
     t.daemon = True
     t.start()
     while True:
         if pipe.recv() == 'read': # Blocks thread until told to read
-            pipe.send(tag_queue.get(timeout=1)) # Sends list of tags through pipe
-            with tag_queue.mutex:
-                tag_queue.queue.clear()
+            lock.acquire()
+            pipe.send(tags.pop()) # Sends list of tags through pipe
+            lock.release()

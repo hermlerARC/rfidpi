@@ -16,6 +16,7 @@ import datetime, json, Tag, time, sensors
 SPEED_OF_SOUND = 34300 # centimeters/second
 
 def create_tags(tag_list, status):
+    print(tag_list)
     all_tags = []
     
     for x in tag_list: # Loop through each TagReadData object
@@ -62,4 +63,4 @@ def scanning_manager(pipe, read_pipe):
                     break
                 time.sleep(sleep_time)
                                 
-        time.sleep(sleep_time)
+        time.sleep(1)
