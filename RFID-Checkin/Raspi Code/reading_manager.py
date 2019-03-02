@@ -31,8 +31,9 @@ def read_once(reader):
 def test_reader(reader):
     try:
         while True:
+            print(reader.get_power_range())
             print(read_once(reader))
-            time.sleep(1)
+            time.sleep(2)
     except KeyboardInterrupt:
         print('Ending RFID reader test.')
         

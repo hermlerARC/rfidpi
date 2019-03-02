@@ -25,7 +25,7 @@ reader_port = 0
 # Configure ThingMagic RFID Reader on USB port
 while not reader_connected:
     try:
-        reader = mercury.Reader("tmr:///dev/ttyUSB{}".format(reader_port), baudrate=9600)
+        reader = mercury.Reader("tmr:///dev/ttyUSB{}".format(reader_port), baudrate=115200)
         reader.set_region('NA')
         reader_connected = True
         print('connected to reader on port {}'.format(reader_port))

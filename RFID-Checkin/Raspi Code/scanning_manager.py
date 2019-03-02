@@ -27,7 +27,7 @@ def create_tags(tag_list, status):
 def scanning_manager(pipe, read_pipe):
     sensors.setup() # Connect GPIO pins to sonar sensors.
     
-    threshold_distance = 50 # Max distance to read in centimeters before sensors are considered 'tripped'.
+    threshold_distance = 200 # Max distance to read in centimeters before sensors are considered 'tripped'.
     threshold_time = 3 # Max seconds to wait for object to pass both sensors.
     sleep_time = threshold_distance / SPEED_OF_SOUND # Wait time before each call to sensors.get_sensor_value() to allow for sensors to read properly
     
@@ -47,11 +47,12 @@ def scanning_manager(pipe, read_pipe):
         s1 = sensors.get_sensor_value('in')
         
         if s1 < threshold_distance:
-            print(s1)
             while (datetime.datetime.now() - ctime).total_seconds() < threshold_time:
                 if (sensors.get_sensor_value('out') < threshold_distance):
                     read_pipe.send('read')
+                    cc = datetime.datetime.now()
                     pipe.send(json.dumps(create_tags(read_pipe.recv(), 1)))
+                    print("performance: {}".format(datetime.datetime.now()-cc))
                     break
                 time.sleep(sleep_time)
         
@@ -59,7 +60,9 @@ def scanning_manager(pipe, read_pipe):
             while (datetime.datetime.now() - ctime).total_seconds() < threshold_time:
                 if (sensors.get_sensor_value('in') < threshold_distance):
                     read_pipe.send('read')
+                    cc = datetime.datetime.now()
                     pipe.send(json.dumps(create_tags(read_pipe.recv(), 0)))
+                    print("performance: {}".format(datetime.datetime.now()-cc))
                     break
                 time.sleep(sleep_time)
                                 
