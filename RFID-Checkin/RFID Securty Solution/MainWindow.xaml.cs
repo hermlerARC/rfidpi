@@ -44,11 +44,14 @@ namespace RFID_Securty_Solution
             scannerTabCombobox.DataContext = allReaders;
 
             if (shared) serviceLogin();
+            spreadsheetIDTextBox.Text = Properties.Settings.Default.SpreadsheetID;
             
             var factory = new MqttFactory();
 
             rfid_scanner_client = factory.CreateMqttClient();
-            rfid_scanner_options = new MqttClientOptionsBuilder().WithWebSocketServer("broker.hivemq.com:8000/mqtt").Build();
+            rfid_scanner_options = new MqttClientOptionsBuilder()
+                .WithWebSocketServer("broker.hivemq.com:8000/mqtt")
+                .WithClientId(Guid.NewGuid().ToString()).Build();
         }
 
         List<ID> allIDS = new List<ID>();
@@ -123,6 +126,8 @@ namespace RFID_Securty_Solution
                 scannerTabCombobox.ItemsSource = allReaders;
                 if (allReaders.Count > 0) scannerTabCombobox.SelectedIndex = 1;
                 useExistingSpreadsheetLoadingPictureBox.Visibility = Visibility.Hidden;
+                Properties.Settings.Default.SpreadsheetID = spreadsheetID;
+                Properties.Settings.Default.Save();
             }
         }
 
@@ -191,7 +196,8 @@ namespace RFID_Securty_Solution
                 MessageBox.Show("Cannot find reader. Please select a valid reader.", "RFID Security Solution", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            var active_tag = await RFIDScanner.Scan(rfid_scanner_client, rfid_scanner_options, allReaders[scannerTabCombobox.SelectedIndex].ID);
+
+            var active_tag = await rfid_scanner_client.Scan(rfid_scanner_options, allReaders[scannerTabCombobox.SelectedIndex].ID);
             activeTagTextbox.Text = active_tag.EPC;
             var index = allIDS.FindIndex(x => x.EPC == active_tag.EPC);
             if (index > -1) viewSpreadsheetListView.SelectedIndex = index;
@@ -373,7 +379,7 @@ namespace RFID_Securty_Solution
                 serviceLabel.Content = "starting";
                 serviceLabel.Foreground = new SolidColorBrush(Colors.Blue);
 
-                await RFIDScanner.Log((tags, location) =>
+                await rfid_scanner_client.Log((tags, location) =>
                 {
                     Dispatcher.Invoke(() =>
                     {
@@ -381,28 +387,27 @@ namespace RFID_Securty_Solution
                         {
                             var index = allIDS.FindIndex(id => id.EPC == tag.EPC);
                             if (index == -1) continue;
-                            var log = new Log(tag.Time, tag.Status, tag.EPC, allIDS[index].Owner, allIDS[index].Description, location, allIDS[index].Extra);
+                            var log = new Log(tag.Time, tag.Status, tag.EPC, allIDS[index].Owner, allIDS[index].Description, allReaders.Find(x => x.ID == location).Location, allIDS[index].Extra);
 
                             allLogs.Add(log);
                             allIDS[index].Status = log.Status;
 
-                            appendNewRow(Properties.Settings.Default.SpreadsheetID, "log", log.TimeStamp, log.Status, log.EPC, log.Owner, log.Description, log.Location, log.Extra);
-                            updateCells(spreadsheetIDTextBox.Text, $"ids!a{index + 2}:e{index + 2}", allIDS[index].Values);
+                            appendNewRow(Properties.Settings.Default.SpreadsheetID, "log", log.TimeStamp, log.Status.ToString(), log.EPC, log.Owner, log.Description, log.Location, log.Extra);
+                            updateCells(Properties.Settings.Default.SpreadsheetID, $"ids!a{index + 2}:e{index + 2}", allIDS[index].Values);
                         }
                         populateListView(logSpreadsheetListView, allLogs);
                         populateListView(spreadsheetPreviewListView, allIDS);
                         populateListView(viewSpreadsheetListView, allIDS);
-                    });   
-                }, rfid_scanner_client, rfid_scanner_options, allReaders.Select(x => x.ID).ToList());
+                    });
+                }, rfid_scanner_options, allReaders.Select(x => x.ID).ToList());
             
-                
                 serviceLabel.Content = "logging";
                 serviceLabel.Foreground = new SolidColorBrush(Colors.Green);
             } else
             {
                 serviceLabel.Content = "stopping";
                 serviceLabel.Foreground = new SolidColorBrush(Colors.Blue);
-                RFIDScanner.Dispose(rfid_scanner_client, allReaders.Select(x => x.ID).ToList());
+                rfid_scanner_client.Dispose(allReaders.Select(x => x.ID).ToList());
                 serviceLabel.Content = "stopped";
                 serviceLabel.Foreground = new SolidColorBrush(Colors.Red);
             }
