@@ -14,7 +14,6 @@ import paho.mqtt.publish as publish
 
 
 def reporting_manager(pipe, raspi_id):
-    RASPI_ID = raspi_id
     conn = pipe
     
     while True:

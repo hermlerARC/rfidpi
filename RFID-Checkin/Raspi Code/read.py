@@ -14,13 +14,17 @@ Edited on: February 19, 2019
 '''
 
 from multiprocessing import Process, Pipe
+import RPi.GPIO as GPIO
 import paho.mqtt.client as mqtt
-import reporting_manager, scanning_manager, reading_manager, json, mercury, sensors, sys
+import reporting_manager, scanning_manager, reading_manager, json, mercury, sensors
 
 RASPI_ID = 'UPOGDU' # Unique ID to differentiate between different systems that are connected to the UI Client
 processes = [] # Handles processes that manage RFID tag reading and reporting to MQTT
 reader_connected = False
 reader_port = 0
+
+sensors.setup()
+print('connected to sensors')
 
 # Configure ThingMagic RFID Reader on USB port
 while not reader_connected:
@@ -31,12 +35,12 @@ while not reader_connected:
         print('connected to reader on port {}'.format(reader_port))
     except:
         reader_port = reader_port + 1
+        
 
 def client_messaged(client, data, msg):
     # When 'read' is posted on the topic 'reader/{RASPI_ID}/status'
     # Initialize and start reporting_process and scanning_process
     if (msg.payload == b'read'):
-            
         reporting_conn, scanner_conn1 = Pipe() # Connect two processes by pipe
         reading_conn, scanner_conn2 = Pipe()
         
@@ -69,12 +73,14 @@ def client_messaged(client, data, msg):
         processes[0].terminate()
         processes[1].terminate()
         processes[2].terminate()
+        
+        GPIO.cleanup()
             
     # When 'test_sensors' is posted on the topic 'reader/{RASPI_ID}/status'
     # Test sonar sensors
     elif (msg.payload == b'test_sensors'):
         print('Beginning test... press control+c to stop')
-        sensors.test_sensors(100)
+        sensors.test_sensors(300)
             
     # When 'test_reader' is posted on the topic 'reader/{RASPI_ID}/status'
     # Test RFID reader
@@ -92,4 +98,13 @@ if __name__ == '__main__':
     client.on_message = client_messaged
     client.connect('broker.hivemq.com', port=8000)
 
-    client.loop_forever() # Prevents MQTT client from prematurely closing
+    try:
+        client.loop_forever() # Prevents MQTT client from prematurely closing
+    except KeyboardInterrupt:
+        processes[0].terminate()
+        processes[1].terminate()
+        processes[2].terminate()
+        
+        del reader
+        
+        GPIO.cleanup()
