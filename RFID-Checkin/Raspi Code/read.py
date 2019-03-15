@@ -88,6 +88,9 @@ def client_messaged(client, data, msg):
         print('Beginning test... press control+c to stop')
         reading_manager.test_reader(reader)
 
+    elif (msg.payload == b'get_data'):
+        pass
+        
 def client_connected(client, data, flags, rc):
     print('connected to client on \'reader/{}/status\''.format(RASPI_ID))
     client.subscribe('reader/{}/status'.format(RASPI_ID)) # Setup client to receive messages posted on 'reader/{RASPI_ID}/status' topic

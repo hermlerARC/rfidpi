@@ -70,7 +70,7 @@ def test_sensors(threshold = 100):
             if (v2 < threshold):
                 print(t + '\t2\t' + str(v2) + " cm")
                 
-            time.sleep(.05)
+            time.sleep(.5)
                 
             
     except KeyboardInterrupt:

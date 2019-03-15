@@ -10,7 +10,6 @@ Dom Stepek, Gavin Furlong
 
 Edited on: February 19, 2019
 '''
-
 import datetime, json, Tag, time, sensors, threading
 
 SPEED_OF_SOUND = 34300 # centimeters/second
@@ -50,8 +49,10 @@ def read_sensors(sensor, threshold):
 def scanning_manager(reporting_pipe, read_pipe):
     global in_read
     global out_read
+    prev_in = []
+    prev_out = []
     
-    threshold_distance = 70 # Max distance to read in centimeters before sensors are considered 'tripped'.
+    threshold_distance = 150 # Max distance to read in centimeters before sensors are considered 'tripped'.
 
     threading.Thread(target=read_sensors, args=('in', threshold_distance)).start()
     threading.Thread(target=read_sensors,args=('out',threshold_distance)).start()
@@ -62,11 +63,19 @@ def scanning_manager(reporting_pipe, read_pipe):
         else:
             if (in_read - out_read).total_seconds() < 3 and (in_read - out_read).total_seconds() > 0:
                 read_pipe.send('read')
-                reporting_pipe.send(json.dumps(create_tags(read_pipe.recv(), 0)))
+                new_tags = create_tags(read_pipe.recv(), 0)
+                #for tag in prev_in:
+                    
+                    
+                reporting_pipe.send(json.dumps(new_tags))
                 in_read = None
                 out_read = None
             elif (out_read - in_read).total_seconds() < 3 and (out_read - in_read).total_seconds() > 0:
                 read_pipe.send('read')
-                reporting_pipe.send(json.dumps(create_tags(read_pipe.recv(), 1)))
+                new_tags = create_tags(read_pipe.recv(), 1)
+                #for tag in prev_in:
+                    
+                    
+                reporting_pipe.send(json.dumps(new_tags))
                 in_read = None
                 out_read = None

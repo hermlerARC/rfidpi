@@ -23,8 +23,8 @@ def read_once(reader):
 
     for tag in tag_data:
         epc = str(tag.epc, 'utf-8') # Converts EPC from tag of type byte[] to string.
-        if epc == 'E20035636B938EF0E6B1963B':
-            continue
+##        if epc == 'E20035636B938EF0E6B1963B':
+##            continue
         rssi = tag.rssi # Receives signal strength of tag
         all_tags.append([epc, rssi])
         
