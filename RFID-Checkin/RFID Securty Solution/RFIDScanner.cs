@@ -15,7 +15,7 @@ namespace RFID_Securty_Solution
 {
     public static class RFIDScanner
     {
-        public static async Task<LoggedTag> Scan(IMqttClient client, IMqttClientOptions options, string readerID)
+        public static async Task<LoggedTag> Scan(this IMqttClient client, IMqttClientOptions options, string readerID)
         {
             Dispose(client, new List<string> { readerID });
             var active_tag = new LoggedTag();
@@ -34,11 +34,11 @@ namespace RFID_Securty_Solution
             return active_tag;
         }
 
-        public static async Task<IMqttClient> Log(Action<List<LoggedTag>, string> callback, IMqttClient client, IMqttClientOptions options, List<string> raspi_ids)
+        public static async Task<IMqttClient> Log(this IMqttClient client, Action<List<LoggedTag>, string> callback, IMqttClientOptions options, List<string> raspi_ids)
         {
-            Dispose(client, raspi_ids);
             var scannedTags = new List<LoggedTag>();
             await client.ConnectAsync(options);
+
             foreach (var raspi_id in raspi_ids)
             {
                 await client.SubscribeAsync($"reader/{raspi_id}/active_tag", MqttQualityOfServiceLevel.AtLeastOnce);
@@ -57,18 +57,12 @@ namespace RFID_Securty_Solution
             return client;
         }
 
-        public static async void Dispose(IMqttClient client, List<string> raspi_ids)
+        public static async void Dispose(this IMqttClient client, List<string> raspi_ids)
         {
             foreach (var rid in raspi_ids)
             {
-                try
-                {
-                    await client.PublishAsync($"reader/{rid}/status", "stop", MqttQualityOfServiceLevel.AtLeastOnce);
-                    await client.UnsubscribeAsync($"reader/{rid}/active_tag");
-                } catch (Exception ex)
-                {
-
-                }
+                await client.PublishAsync($"reader/{rid}/status", "stop", MqttQualityOfServiceLevel.AtLeastOnce);
+                await client.UnsubscribeAsync($"reader/{rid}/active_tag");
             }
             await client.DisconnectAsync();
         }
