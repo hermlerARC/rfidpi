@@ -8,10 +8,11 @@ reporting manager which tags are read.
 Contributors:
 Dom Stepek, Gavin Furlong
 
-Edited on: February 19, 2019
+Edited on: March 21, 2019
 '''
-import datetime, json, Tag, time, sensors, queue
+import datetime, json, Tag, sensors, queue
 
+THRESHOLD_TIME     = 3 # Max threshold seconds to wait for someone to pass by both sensors
 THRESHOLD_DISTANCE = 150 # Max distance to read in centimeters before sensors are considered 'tripped'.
 read_status = queue.Queue(maxsize = 1)
 
@@ -34,23 +35,40 @@ def read_sensors(sensor, value):
 
 def scanning_manager(reporting_pipe, read_pipe):
     global read_status
-    global THRESHOLD_DISTANCE
+    global THRESHOLD_TIME
 
     active_threads = [sensors.begin_reading(0, read_sensors), sensors.begin_reading(1, read_sensors)]
     
     while True:
-        sensor = read_status.get()
+        sensor = read_status.get() # First sensor to report being tripped
+        current_time = datetime.datetime.now()
+        second_read = None
+        activated = False
         
         sensors.set_read_status(active_threads[sensor], 0) # Pauses sensor from continuously reading
-        second_read = read_status.get() # Wait for a second sensor to drop below the THRESHOLD_DISTANCE
         
-        # Handles the possibility of read_status getting multiple reads from one sensor
-        while second_read != (int(not sensor)):
-            second_read = read_status.get()
+        while True:
+            if (datetime.datetime.now() - current_time).total_seconds() >= THRESHOLD_TIME:
+                # Resets the queue
+                with read_status.mutex:
+                    read_status.queue.clear() 
+                break
+            try:
+                second_read = read_status.get(timeout=THRESHOLD_TIME) # Wait for a threshold time sensor to drop below the THRESHOLD_DISTANCE
+                if second_read == (int(not sensor)): # Prevents first sensor from being double read
+                    activated = True
+                    break
+            except queue.Empty: # If the queue remains empty for a threshold time
+                print("{}\temptied the queue".format(datetime.datetime.now()))
+                # Resets the queue
+                with read_status.mutex:
+                    read_status.queue.clear() 
+                break
             
         # Tells reading manager to send a list of tag readings, converts object to JSON, and sends data to reporting manager 
-        read_pipe.send('read')
-        reporting_pipe.send(json.dumps(create_tags(read_pipe.recv(), int(not sensor))))
-        
-        # Resumes the first sensor
-        sensors.set_read_status(active_threads[sensor], 1)
+        if activated:
+            print('heading {}'.format('in' if int(not sensor) == 0 else 'out'))
+            #read_pipe.send('read')
+            #reporting_pipe.send(json.dumps(create_tags(read_pipe.recv(), int(not sensor))))
+            
+        sensors.set_read_status(active_threads[sensor], 1) # Resumes the paused sensor

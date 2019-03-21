@@ -7,7 +7,7 @@ Handles tags read by scanning manager as well as denotes the physical location o
 Contributors:
 Dom Stepek, Gavin Furlong
 
-Edited on: February 19, 2019
+Edited on: March 21, 2019
 '''
 
 

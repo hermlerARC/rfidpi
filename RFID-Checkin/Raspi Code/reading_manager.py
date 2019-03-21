@@ -9,7 +9,7 @@ Dom Stepek, Gavin Furlong
 
 To read more about Mercury API for Python go to: https://github.com/gotthardp/python-mercuryapi
 
-Edited on: February 19, 2019
+Edited on: March 21, 2019
 '''
 
 import threading, datetime

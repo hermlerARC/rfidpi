@@ -10,7 +10,7 @@ Dom Stepek, Gavin Furlong
 
 Source code: https://tutorials-raspberrypi.com/raspberry-pi-ultrasonic-sensor-hc-sr04/
 
-Edited on: February 19, 2019
+Edited on: March 21, 2019
 '''
 
 import RPi.GPIO as GPIO
@@ -59,6 +59,13 @@ def setup():
     GPIO.setup(OUT_PINS[1], GPIO.IN)
     
 def begin_reading(sensor, callback):
+    """
+    Creates a new thread to run a reader and calls the callback function everytime it gets a read
+    
+    Keyword arguments:
+        sensor -- Either '0' or '1' for in or out reader, respectively
+        callback -- Function that should have 2 parameters. Calls the function with the id and reading of the sensor.
+    """
     global READ_SPEED
     global active_threads
     global thread_counter
@@ -74,7 +81,7 @@ def begin_reading(sensor, callback):
                 break
     
     
-    active_threads.append(1)
+    active_threads.append(1) # Add the 'run' status to the active_threads list
     threading.Thread(target=read_sensors, args=(sensor, callback, thread_counter)).start()
     thread_counter += 1
     return thread_counter - 1
@@ -82,7 +89,7 @@ def begin_reading(sensor, callback):
 
 def set_read_status(thread_count, status):
     """
-    Tell a sensor to pause, resume, or stop
+    Tell a sensor to pause, resume, or stop.
     
     Keyword arguments:
         thread_count -- the ID associated with the thread the sensor reads on
@@ -94,15 +101,18 @@ def set_read_status(thread_count, status):
 
 
 def test_sensors(threshold = 100):
-    global active_threads
+    """
+    Prints out sensor reading every 1/READ_SPEED seconds. Stops reading with input from keyboard.
     
-    in_thread = None
-    out_thread = None
+    Keyword arguments:
+        threshold -- Max distance in cm that the sonic readers reports. Default is 100 cm.
+    """
     
+    # Function that prints out to the standard output a line formatted as "{Time}  {Sensor}  {Read value}"
     def print_reading(sensor, reading):
         if reading < threshold:
             t = str(datetime.datetime.now().isoformat())
-            print ("{}\t{}\t{}".format(t, sensor, reading))
+            print ("{}\t{}\t{}".format(t, 'in' if sensor == 1 else 'out', reading))
     
     in_thread  = begin_reading(0, print_reading)
     out_thread = begin_reading(1, print_reading)       

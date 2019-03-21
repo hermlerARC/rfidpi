@@ -7,7 +7,7 @@ Receives tags from scanning manager and reports the tags to the UI client throug
 Contributors:
 Dom Stepek, Gavin Furlong
 
-Edited on: February 19, 2019
+Edited on: March 21, 2019
 '''
 
 import paho.mqtt.publish as publish

@@ -10,7 +10,7 @@ Dom Stepek, Gavin Furlong
 
 To read more about Mercury API for Python go to: https://github.com/gotthardp/python-mercuryapi
 
-Edited on: February 19, 2019
+Edited on: March 21, 2019
 '''
 
 from multiprocessing import Process, Pipe
@@ -73,8 +73,6 @@ def client_messaged(client, data, msg):
         processes[0].terminate()
         processes[1].terminate()
         processes[2].terminate()
-        
-        GPIO.cleanup()
             
     # When 'test_sensors' is posted on the topic 'reader/{RASPI_ID}/status'
     # Test sonar sensors
@@ -104,9 +102,10 @@ if __name__ == '__main__':
     try:
         client.loop_forever() # Prevents MQTT client from prematurely closing
     except KeyboardInterrupt:
-        processes[0].terminate()
-        processes[1].terminate()
-        processes[2].terminate()
+        if len(processes) > 0:
+            processes[0].terminate()
+            processes[1].terminate()
+            processes[2].terminate()
         
         del reader
         
