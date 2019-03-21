@@ -14,14 +14,17 @@ Edited on: February 19, 2019
 '''
 
 import RPi.GPIO as GPIO
-import time, datetime
+import time, datetime, threading
 
+thread_counter = 0
+active_threads = []
 IN_PINS = [18,23]
 OUT_PINS = [25,24]
+READ_SPEED = 10 # 10 reads per second
 
 def get_sensor_value(sensor):
     # Read from either IN_PINS or OUT_PINS
-    pins = IN_PINS if sensor == 'in' else OUT_PINS
+    pins = IN_PINS if sensor == 0 else OUT_PINS
     
     # Set 'Trigger' pin to HIGH
     GPIO.output(pins[0], True)
@@ -54,25 +57,59 @@ def setup():
     
     GPIO.setup(IN_PINS[1], GPIO.IN)
     GPIO.setup(OUT_PINS[1], GPIO.IN)
+    
+def begin_reading(sensor, callback):
+    global READ_SPEED
+    global active_threads
+    global thread_counter
+    
+    def read_sensors(sensor, callback, thread_count):
+        while True:
+            if active_threads[thread_count] == 0: # Pause
+                pass
+            elif active_threads[thread_count] == 1: # Run
+                callback(sensor, get_sensor_value(sensor))
+                time.sleep(1/READ_SPEED)
+            elif active_threads[thread_count] == 2: # Exit
+                break
+    
+    
+    active_threads.append(1)
+    threading.Thread(target=read_sensors, args=(sensor, callback, thread_counter)).start()
+    thread_counter += 1
+    return thread_counter - 1
+
+
+def set_read_status(thread_count, status):
+    """
+    Tell a sensor to pause, resume, or stop
+    
+    Keyword arguments:
+        thread_count -- the ID associated with the thread the sensor reads on
+        status -- 0 for pause, 1 for resume, 2 for stop
+    """
+    
+    global active_threads
+    active_threads[thread_count] = status
+
 
 def test_sensors(threshold = 100):
-    try:
-        print('Time\tSensor\tValue')
-        while True:
+    global active_threads
+    
+    in_thread = None
+    out_thread = None
+    
+    def print_reading(sensor, reading):
+        if reading < threshold:
             t = str(datetime.datetime.now().isoformat())
-            
-            v1 = get_sensor_value('in')
-            v2 = get_sensor_value('out')
-            
-            if (v1 < threshold):
-                print(t + '\t1\t' + str(v1) + " cm")  
-                
-            if (v2 < threshold):
-                print(t + '\t2\t' + str(v2) + " cm")
-                
-            time.sleep(.5)
-                
-            
-    except KeyboardInterrupt:
-        print('Stopped tests.')
+            print ("{}\t{}\t{}".format(t, sensor, reading))
+    
+    in_thread  = begin_reading(0, print_reading)
+    out_thread = begin_reading(1, print_reading)       
+
+    input()
+
+    set_read_status(in_thread, 2)
+    set_read_status(out_thread, 2)
+    print('Stopped tests.')
 

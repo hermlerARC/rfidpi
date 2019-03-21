@@ -10,16 +10,10 @@ Dom Stepek, Gavin Furlong
 
 Edited on: February 19, 2019
 '''
-import datetime, json, Tag, time, sensors, threading
+import datetime, json, Tag, time, sensors, queue
 
-SPEED_OF_SOUND = 34300 # centimeters/second
-
-in_read = None
-out_read = None
-read_pipe = None
-reporting_pipe = None
-pipe_lock = threading.Lock()
-
+THRESHOLD_DISTANCE = 150 # Max distance to read in centimeters before sensors are considered 'tripped'.
+read_status = queue.Queue(maxsize = 1)
 
 def create_tags(tag_list, status):
     print(tag_list)
@@ -30,52 +24,33 @@ def create_tags(tag_list, status):
             
     return all_tags
 
-def read_sensors(sensor, threshold):
-    global read_pipe
-    global reporting_pipe
-    global in_read
-    global out_read
+def read_sensors(sensor, value):
+    global THRESHOLD_DISTANCE
+    global read_status
     
-    while True:
-        if sensors.get_sensor_value(sensor) < threshold:
-            if sensor == 'in':
-                in_read =  datetime.datetime.now()
-            elif sensor == 'out':
-                out_read = datetime.datetime.now()
-                
-        time.sleep(0.05)
-            
+    if value < THRESHOLD_DISTANCE:
+        read_status.put(sensor)
+        
 
 def scanning_manager(reporting_pipe, read_pipe):
-    global in_read
-    global out_read
-    prev_in = []
-    prev_out = []
-    
-    threshold_distance = 150 # Max distance to read in centimeters before sensors are considered 'tripped'.
+    global read_status
+    global THRESHOLD_DISTANCE
 
-    threading.Thread(target=read_sensors, args=('in', threshold_distance)).start()
-    threading.Thread(target=read_sensors,args=('out',threshold_distance)).start()
+    active_threads = [sensors.begin_reading(0, read_sensors), sensors.begin_reading(1, read_sensors)]
     
     while True:
-        if in_read == None or out_read == None:
-            continue
-        else:
-            if (in_read - out_read).total_seconds() < 3 and (in_read - out_read).total_seconds() > 0:
-                read_pipe.send('read')
-                new_tags = create_tags(read_pipe.recv(), 0)
-                #for tag in prev_in:
-                    
-                    
-                reporting_pipe.send(json.dumps(new_tags))
-                in_read = None
-                out_read = None
-            elif (out_read - in_read).total_seconds() < 3 and (out_read - in_read).total_seconds() > 0:
-                read_pipe.send('read')
-                new_tags = create_tags(read_pipe.recv(), 1)
-                #for tag in prev_in:
-                    
-                    
-                reporting_pipe.send(json.dumps(new_tags))
-                in_read = None
-                out_read = None
+        sensor = read_status.get()
+        
+        sensors.set_read_status(active_threads[sensor], 0) # Pauses sensor from continuously reading
+        second_read = read_status.get() # Wait for a second sensor to drop below the THRESHOLD_DISTANCE
+        
+        # Handles the possibility of read_status getting multiple reads from one sensor
+        while second_read != (int(not sensor)):
+            second_read = read_status.get()
+            
+        # Tells reading manager to send a list of tag readings, converts object to JSON, and sends data to reporting manager 
+        read_pipe.send('read')
+        reporting_pipe.send(json.dumps(create_tags(read_pipe.recv(), int(not sensor))))
+        
+        # Resumes the first sensor
+        sensors.set_read_status(active_threads[sensor], 1)
