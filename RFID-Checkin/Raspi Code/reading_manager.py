@@ -12,17 +12,19 @@ To read more about Mercury API for Python go to: https://github.com/gotthardp/py
 Edited on: March 21, 2019
 '''
 
-import threading, datetime
+import threading, datetime, time
 
 lock = threading.Lock() # Blocks thread when accessing tags list
 tags = [] # List that holds tags to send to scanning_manager
+READ_SPEED = 10
 
 def read_once(reader):
     all_tags = []
     tag_data = reader.read() # Read tags from RFID reader. Can cause RuntimeError if unable to talk to reader.
-
+    
     for tag in tag_data:
         epc = str(tag.epc, 'utf-8') # Converts EPC from tag of type byte[] to string.
+        print("{}\t{}".format(datetime.datetime.now(),epc)
 ##        if epc == 'E20035636B938EF0E6B1963B':
 ##            continue
         rssi = tag.rssi # Receives signal strength of tag
@@ -31,44 +33,56 @@ def read_once(reader):
     return all_tags
         
 def test_reader(reader):
-    try:
-        while True:
-            print(reader.get_power_range())
-            print(read_once(reader))
-    except KeyboardInterrupt:
-        print('Ending RFID reader test.')
+    global READ_SPEED
+    term = True
+    
+    def test():
+        while term:
+            read = read_once(reader)
+            if len(read) > 0:
+                pass
+                #print("{}\t{}".format(datetime.datetime.now(),read_once(reader)))
+            time.sleep(1/READ_SPEED)
+        
+    threading.Thread(target=test).start()
+    input()
+    print("Stopping Test")
+    term = False
         
 def read(reader):
     global tags
+    
     while True:
-        current_tags = read_once(reader) # Reads EPCs and RSSIs from RFID reader
-        
-        lock.acquire()
-        
-        # Prevent tags list from taking too much memory by maximizing its size to 10 objects
-        if len(tags) > 10: 
-            tags.pop(0)
+        current_tags = None
+        while True:
+            current_tags = read_once(reader)
             
-        if current_tags == []:
-            lock.release()
-            continue
-        tags.append(current_tags)
+            if len(current_tags) > 0:
+                print('got tags')
+                current_tags = read_once(reader) # Reads EPCs and RSSIs from RFID reader
+                break
+            
+        lock.acquire()
+        tags = [current_tags, datetime.datetime.now()]
         lock.release()
 
 def reading_manager(pipe, reader):
     global tags
+    
     t = threading.Thread(target=read, args=(reader,))
     t.daemon = True
     t.start()
+    
     while True:
-        if pipe.recv() == 'read': # Blocks thread until told to read
-            ctime = datetime.datetime.now()
-            while True:
-                try:
-                    lock.acquire()
-                    pipe.send(tags.pop()) # Sends list of tags through pipe
-                    print('sent tags after {} seconds'.format((datetime.datetime.now() - ctime).total_seconds()))
-                    lock.release()
-                    break
-                except:
-                    continue
+        pass_time = pipe.recv()
+        ctime = datetime.datetime.now()
+        
+        lock.acquire()
+        print(tags)
+        
+        if (pass_time - tags[1]).total_seconds() < 1:
+            pipe.send(tags) # Send most recent list of tags
+            
+        lock.release()
+        
+        print('sent tags after {} seconds'.format((datetime.datetime.now() - ctime).total_seconds()))

@@ -59,7 +59,6 @@ def scanning_manager(reporting_pipe, read_pipe):
                     activated = True
                     break
             except queue.Empty: # If the queue remains empty for a threshold time
-                print("{}\temptied the queue".format(datetime.datetime.now()))
                 # Resets the queue
                 with read_status.mutex:
                     read_status.queue.clear() 
@@ -68,7 +67,9 @@ def scanning_manager(reporting_pipe, read_pipe):
         # Tells reading manager to send a list of tag readings, converts object to JSON, and sends data to reporting manager 
         if activated:
             print('heading {}'.format('in' if int(not sensor) == 0 else 'out'))
-            #read_pipe.send('read')
-            #reporting_pipe.send(json.dumps(create_tags(read_pipe.recv(), int(not sensor))))
+            activated = False 
+            read_pipe.send(current_time)
+            reporting_pipe.send(json.dumps(create_tags(read_pipe.recv(), int(not sensor))))
+            print('sent tags')
             
         sensors.set_read_status(active_threads[sensor], 1) # Resumes the paused sensor
