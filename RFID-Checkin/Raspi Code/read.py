@@ -20,19 +20,18 @@ import reporting_manager, scanning_manager, reading_manager, json, mercury, sens
 
 RASPI_ID = 'UPOGDU' # Unique ID to differentiate between different systems that are connected to the UI Client
 processes = [] # Handles processes that manage RFID tag reading and reporting to MQTT
-reader_connected = False
 reader_port = 0
 
 sensors.setup()
 print('connected to sensors')
 
 # Configure ThingMagic RFID Reader on USB port
-while not reader_connected:
+while True:
     try:
         reader = mercury.Reader("tmr:///dev/ttyUSB{}".format(reader_port), baudrate=115200)
         reader.set_region('NA')
-        reader_connected = True
         print('connected to reader on port {}'.format(reader_port))
+        break
     except:
         reader_port = reader_port + 1
         
