@@ -18,71 +18,46 @@ lock = threading.Lock() # Blocks thread when accessing tags list
 tags = [] # List that holds tags to send to scanning_manager
 READ_SPEED = 10
 
-def read_once(reader):
-    all_tags = []
-    tag_data = reader.read() # Read tags from RFID reader. Can cause RuntimeError if unable to talk to reader.
-    
-    for tag in tag_data:
-        epc = str(tag.epc, 'utf-8') # Converts EPC from tag of type byte[] to string.
-        print("{}\t{}".format(datetime.datetime.now(),epc)
-##        if epc == 'E20035636B938EF0E6B1963B':
-##            continue
-        rssi = tag.rssi # Receives signal strength of tag
-        all_tags.append([epc, rssi])
-        
-    return all_tags
-        
 def test_reader(reader):
-    global READ_SPEED
-    term = True
+    print('starting')
+    def print_tag(tag):
+        print("{}\t{}".format(datetime.datetime.now(), str(tag.epc, 'utf-8')))
+        
+    reader.start_reading(print_tag, on_time=250, off_time=0)
+    print('begin')
     
-    def test():
-        while term:
-            read = read_once(reader)
-            if len(read) > 0:
-                pass
-                #print("{}\t{}".format(datetime.datetime.now(),read_once(reader)))
-            time.sleep(1/READ_SPEED)
-        
-    threading.Thread(target=test).start()
-    input()
-    print("Stopping Test")
-    term = False
-        
+    while input() != '\n':
+        pass
+    reader.stop_reading()
+    
+    
 def read(reader):
     global tags
     
-    while True:
-        current_tags = None
-        while True:
-            current_tags = read_once(reader)
-            
-            if len(current_tags) > 0:
-                print('got tags')
-                current_tags = read_once(reader) # Reads EPCs and RSSIs from RFID reader
-                break
-            
+    def process_tags(tag):
         lock.acquire()
-        tags = [current_tags, datetime.datetime.now()]
+        tags.append([str(tag.epc, 'utf-8'), tag.rssi, datetime.datetime.now()])
+        print(tags)
         lock.release()
+    
+    print('here')
+    reader.start_reading(process_tags, on_time=250, off_time=0)
+
+    while input() != '\n':
+        pass
+    reader.stop_reading()
 
 def reading_manager(pipe, reader):
     global tags
     
-    t = threading.Thread(target=read, args=(reader,))
-    t.daemon = True
-    t.start()
+    threading.Thread(target=read,args=(reader,)).start()
     
     while True:
         pass_time = pipe.recv()
-        ctime = datetime.datetime.now()
         
         lock.acquire()
         print(tags)
-        
-        if (pass_time - tags[1]).total_seconds() < 1:
-            pipe.send(tags) # Send most recent list of tags
-            
+        #proper = list(filter(lambda reading: (reading[2] - pass_time).total_seconds() < 2, tags))
+        tags.clear()
         lock.release()
-        
-        print('sent tags after {} seconds'.format((datetime.datetime.now() - ctime).total_seconds()))
+        #pipe.send(proper)
