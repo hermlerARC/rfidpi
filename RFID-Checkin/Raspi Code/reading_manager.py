@@ -12,24 +12,38 @@ To read more about Mercury API for Python go to: https://github.com/gotthardp/py
 Edited on: March 21, 2019
 '''
 
-import threading, datetime
+import threading, datetime, time
 
 lock = threading.Lock() # Blocks thread when accessing tags list
 tags = [] # List that holds tags to send to scanning_manager
 TIME_THRESHOLD = 1 # In seconds, increase of time range where tags were read. 
+READ_SPEED = 10 # Max number of read attempts per second
+RUN_READER = True
+
+def run_reader(reader, callback):
+    def read():
+        while RUN_READER:
+            tag_data = reader.read(timeout=250)
+            
+            for data in tag_data:
+                callback(data)
+                
+            time.sleep(1 / READ_SPEED)
+    
+    threading.Thread(target=read).start()
 
 def test_reader(reader):
-    print('starting')
+    global RUN_READER
     
     def print_tag(tag):
         print("{}\t{}".format(datetime.datetime.now(), str(tag.epc, 'utf-8')))
         
-    reader.start_reading(print_tag, on_time=250, off_time=0)
-    print('begin')
+    run_reader(reader, print_tag)
     
-    while input("Enter to exit") != '\n':
-        pass
-    reader.stop_reading()
+    input()
+    RUN_READER = False
+    
+    print("Stopping test...")
     
     
 def read(reader):
@@ -40,17 +54,13 @@ def read(reader):
         tags.append([str(tag.epc, 'utf-8'), tag.rssi, datetime.datetime.now()])
         lock.release()
     
-    reader.start_reading(process_tags, on_time=250, off_time=0)
-
-    while input("Enter to exit") != '\n':
-        pass
-    reader.stop_reading()
+    run_reader(reader, process_tags)
 
 def reading_manager(pipe, reader):
     global tags
     global TIME_THRESHOLD
     
-    threading.Thread(target=read,args=(reader,)).start()
+    read(reader)
     
     while True:
         '''
