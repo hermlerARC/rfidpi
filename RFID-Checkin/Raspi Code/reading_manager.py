@@ -17,13 +17,15 @@ import threading, datetime, time
 lock = threading.Lock() # Blocks thread when accessing tags list
 tags = [] # List that holds tags to send to scanning_manager
 TIME_THRESHOLD = 1 # In seconds, increase of time range where tags were read. 
-READ_SPEED = 10 # Max number of read attempts per second
+READ_SPEED = 20 # Max number of read attempts per second
 RUN_READER = True
 
 def run_reader(reader, callback):
+    global RUN_READER
+    
     def read():
         while RUN_READER:
-            tag_data = reader.read(timeout=250)
+            tag_data = reader.read()
             
             for data in tag_data:
                 callback(data)
@@ -70,19 +72,19 @@ def reading_manager(pipe, reader):
         '''
         times = pipe.recv()
         times = [times[0] - datetime.timedelta(seconds=TIME_THRESHOLD/2), times[1] + datetime.timedelta(seconds=TIME_THRESHOLD/2)]
+        adjusted_tags = []
 
         lock.acquire()
         if len(tags) > 0:  
             ranged_tags = list(filter(lambda x: x[2] > times[0] and x[2] < times[1], tags)) # Get all tags within the time range
             
             lock.release()
-            
+             
             # Discard any duplicate tag reads.
-            adjusted_tags = []
             for x in ranged_tags:
               if x[0] not in list(map(lambda y: y[0], adjusted_tags)):
                 adjusted_tags.append(x)
-                
-            pipe.send(adjusted_tags) # Release tags back over the pipe
         else:
             lock.release()
+            
+        pipe.send(adjusted_tags) # Release tags back over the pipe

@@ -37,6 +37,7 @@ while True:
         
 
 def client_messaged(client, data, msg):
+    print(str(msg.payload))
     # When 'read' is posted on the topic 'reader/{RASPI_ID}/status'
     # Initialize and start reporting_process and scanning_process
     if (msg.payload == b'read'):
@@ -87,20 +88,23 @@ def client_messaged(client, data, msg):
 
     elif (msg.payload == b'get_data'):
         pass
-        
-def client_connected(client, data, flags, rc):
+      
+def client_subscribed(client, userdata, mid, granted_qos):
     print('connected to client on \'reader/{}/status\''.format(RASPI_ID))
-    client.subscribe('reader/{}/status'.format(RASPI_ID)) # Setup client to receive messages posted on 'reader/{RASPI_ID}/status' topic
+
+def client_connected(client, data, flags, rc):
+    client.subscribe('reader/{}/status'.format(RASPI_ID), 1) # Setup client to receive messages posted on 'reader/{RASPI_ID}/status' topic
 
 if __name__ == '__main__':
     client = mqtt.Client(transport='websockets') # Connect with websockets
+    client.on_subscribed = client_subscribed
     client.on_connect = client_connected
     client.on_message = client_messaged
     client.connect('broker.hivemq.com', port=8000)
 
     try:
         client.loop_forever() # Prevents MQTT client from prematurely closing
-    except KeyboardInterrupt:
+    except:
         if len(processes) > 0:
             processes[0].terminate()
             processes[1].terminate()

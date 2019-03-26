@@ -31,6 +31,7 @@ def read_sensors(sensor, value):
     
     if value < THRESHOLD_DISTANCE:
         read_status.put(sensor)
+        print('tripped {} with value {}'.format('in' if sensor == 0 else 'out', value))
         
 
 def scanning_manager(reporting_pipe, read_pipe):
@@ -42,8 +43,10 @@ def scanning_manager(reporting_pipe, read_pipe):
     while True:
         sensor = read_status.get() # First sensor to report being tripped
         current_time = datetime.datetime.now()
+        end_time = None
         second_read = None
         activated = False
+        read_response = None
         
         sensors.set_read_status(active_threads[sensor], 0) # Pauses sensor from continuously reading
         
@@ -56,6 +59,7 @@ def scanning_manager(reporting_pipe, read_pipe):
             try:
                 second_read = read_status.get(timeout=THRESHOLD_TIME) # Wait for a threshold time sensor to drop below the THRESHOLD_DISTANCE
                 if second_read == (int(not sensor)): # Prevents first sensor from being double read
+                    end_time = datetime.datetime.now()    
                     activated = True
                     break
             except queue.Empty: # If the queue remains empty for a threshold time
@@ -68,12 +72,17 @@ def scanning_manager(reporting_pipe, read_pipe):
         if activated:
             print('heading {}'.format('in' if int(not sensor) == 0 else 'out'))
             activated = False 
-            read_pipe.send([current_time, second_read])
-            reporting_pipe.send(json.dumps(create_tags(read_pipe.recv(), int(not sensor))))
+            read_pipe.send([current_time, end_time])
+            
+            read_response = read_pipe.recv()
+            if len(read_response) > 0:
+                reporting_pipe.send(json.dumps(create_tags(read_response, int(not sensor))))
         else:
-            print('unknown')
             read_pipe.send([current_time, current_time + datetime.timedelta(seconds=THRESHOLD_TIME)])
-            reporting_pipe.send(json.dumps(create_tags(read_pipe.recv(), 2)))
-        print('sent tags after {} seconds'.format(datetime.datetime.now() - current_time).total_seconds())
+            
+            read_response = read_pipe.recv()
+            if len(read_response) > 0:
+                reporting_pipe.send(json.dumps(create_tags(read_response, 2)))
+        print('sent tags after {} seconds'.format((datetime.datetime.now() - current_time).total_seconds()))
             
         sensors.set_read_status(active_threads[sensor], 1) # Resumes the paused sensor

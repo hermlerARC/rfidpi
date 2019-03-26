@@ -20,7 +20,7 @@ thread_counter = 0
 active_threads = []
 IN_PINS = [18,23]
 OUT_PINS = [25,24]
-READ_SPEED = 10 # 10 reads per second
+READ_SPEED = 1 # Reads per second
 
 def get_sensor_value(sensor):
     # Read from either IN_PINS or OUT_PINS
@@ -100,13 +100,18 @@ def set_read_status(thread_count, status):
     active_threads[thread_count] = status
 
 
-def test_sensors(threshold = 100):
+def test_sensors(threshold = 100, read_speed = 0):
     """
     Prints out sensor reading every 1/READ_SPEED seconds. Stops reading with input from keyboard.
     
     Keyword arguments:
         threshold -- Max distance in cm that the sonic readers reports. Default is 100 cm.
     """
+    
+    global READ_SPEED
+    
+    if not read_speed == 0:
+        READ_SPEED = read_speed
     
     # Function that prints out to the standard output a line formatted as "{Time}  {Sensor}  {Read value}"
     def print_reading(sensor, reading):
