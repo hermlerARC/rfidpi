@@ -58,7 +58,7 @@ def setup():
     GPIO.setup(IN_PINS[1], GPIO.IN)
     GPIO.setup(OUT_PINS[1], GPIO.IN)
     
-def begin_reading(sensor, callback):
+def begin_reading(sensor, callback, read_speed = 0):
     """
     Creates a new thread to run a reader and calls the callback function everytime it gets a read
     
@@ -69,6 +69,9 @@ def begin_reading(sensor, callback):
     global READ_SPEED
     global active_threads
     global thread_counter
+    
+    if not read_speed == 0:
+        READ_SPEED = read_speed
     
     def read_sensors(sensor, callback, thread_count):
         while True:
