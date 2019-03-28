@@ -1,4 +1,4 @@
-import json, enum
+import enum
 
 class Status(enum.Enum):
   In = 0
@@ -8,7 +8,7 @@ class Status(enum.Enum):
   def __str__(self):
     return str(self.name)
 
-class RFIDTag:																			
+class RFIDTag:		
   def __init__(self, epc, status, owner, description, node, extra):
     self.EPC = epc
     self.Status = status
@@ -18,4 +18,4 @@ class RFIDTag:
     self.Node = node
 
   def __str__(self):
-    return "{}\t{}\t{}\t{}\t{}\t{}".format(self.EPC, str(self.Status), self.Owner, self.Description, self.Node.Location, self.Extra)
+    return f"{self.EPC}\t{str(self.Status)}\t{self.Owner}\t{self.Description}\t{self.Node.Location}\t{self.Extra}"
