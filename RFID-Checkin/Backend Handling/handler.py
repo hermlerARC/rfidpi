@@ -1,3 +1,19 @@
+'''
+RFID Logging Software
+
+Description (handler.py): 
+Handles the receiving and logging of tag reads from all nodes and submitting to GSheets and local database.
+
+Contributors:
+Dom Stepek, Gavin Furlong
+
+To read more about the Google API, go to : https://developers.google.com/identity/protocols/OAuth2
+To read more about MQTT for Python, go to: https://pypi.org/project/paho-mqtt/
+To read more about Mercury API for Python, go to: https://github.com/gotthardp/python-mercuryapi
+
+Edited on: March 29, 2019
+'''
+
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import paho.mqtt.client as mqtt
