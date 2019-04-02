@@ -15,9 +15,17 @@ import datetime, json, Tag, sensors, queue
 THRESHOLD_TIME     = 3 # Max threshold seconds to wait for someone to pass by both sensors
 THRESHOLD_DISTANCE = 150 # Max distance to read in centimeters before sensors are considered 'tripped'.
 read_status = queue.Queue(maxsize = 1)
+process_running = True
+
+def stop_process():
+    global process_running
+    process_running = False
+    
+def start_process():
+    global process_running
+    process_running = True
 
 def create_tags(tag_list, status):
-    print(tag_list)
     all_tags = []
     
     for x in tag_list: # Loop through each TagReadData object
@@ -31,16 +39,16 @@ def read_sensors(sensor, value):
     
     if value < THRESHOLD_DISTANCE:
         read_status.put(sensor)
-        print('tripped {} with value {}'.format('in' if sensor == 0 else 'out', value))
         
 
 def scanning_manager(reporting_pipe, read_pipe):
     global read_status
     global THRESHOLD_TIME
+    global process_running
 
     active_threads = [sensors.begin_reading(0, read_sensors), sensors.begin_reading(1, read_sensors)]
 
-    while True:
+    while process_running:
         sensor = read_status.get() # First sensor to report being tripped
         current_time = datetime.datetime.now()
         end_time = None
@@ -70,7 +78,6 @@ def scanning_manager(reporting_pipe, read_pipe):
             
         # Tells reading manager to send a list of tag readings, converts object to JSON, and sends data to reporting manager 
         if activated:
-            print('heading {}'.format('in' if int(not sensor) == 0 else 'out'))
             activated = False 
             read_pipe.send([current_time, end_time])
             
@@ -83,6 +90,8 @@ def scanning_manager(reporting_pipe, read_pipe):
             read_response = read_pipe.recv()
             if len(read_response) > 0:
                 reporting_pipe.send(json.dumps(create_tags(read_response, 2)))
-        print('sent tags after {} seconds'.format((datetime.datetime.now() - current_time).total_seconds()))
             
         sensors.set_read_status(active_threads[sensor], 1) # Resumes the paused sensor
+    
+    sensors.set_read_status(active_threads[0], 2)
+    sensors.set_read_status(active_threads[1], 2)

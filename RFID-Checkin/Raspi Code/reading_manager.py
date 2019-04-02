@@ -20,13 +20,25 @@ TIME_THRESHOLD = 1 # In seconds, increase of time range where tags were read.
 READ_SPEED = 20 # Max number of read attempts per second
 RUN_READER = True
 
+process_running = True
+
+def stop_process():
+    global process_running
+    process_running = False
+    
+def start_process():
+    global process_running
+    process_running = True
+
 def run_reader(reader, callback):
     global RUN_READER
     
     def read():
         while RUN_READER:
-            tag_data = reader.read()
-            
+            try:
+                tag_data = reader.read()
+            except:
+                continue
             for data in tag_data:
                 callback(data)
                 
@@ -61,10 +73,12 @@ def read(reader):
 def reading_manager(pipe, reader):
     global tags
     global TIME_THRESHOLD
+    global process_running
+    global RUN_READER
     
     read(reader)
     
-    while True:
+    while process_running:
         '''
         Wait for a read signal from the scanning manager.
         Message will give the time range of the tripped sensors.
@@ -88,3 +102,5 @@ def reading_manager(pipe, reader):
             lock.release()
             
         pipe.send(adjusted_tags) # Release tags back over the pipe
+        
+    RUN_READER = False # Stops reading thread

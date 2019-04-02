@@ -21,6 +21,7 @@ import reporting_manager, scanning_manager, reading_manager, json, mercury, sens
 RASPI_ID = 'UPOGDU' # Unique ID to differentiate between different systems that are connected to the UI Client
 processes = [] # Handles processes that manage RFID tag reading and reporting to MQTT
 reader_port = 0
+reader = None
 
 sensors.setup()
 print('connected to sensors')
@@ -28,12 +29,12 @@ print('connected to sensors')
 # Configure ThingMagic RFID Reader on USB port
 while True:
     try:
-        reader = mercury.Reader("tmr:///dev/ttyUSB{}".format(reader_port), baudrate=115200)
+        reader = mercury.Reader("tmr:///dev/ttyUSB{}".format(reader_port))
         reader.set_region('NA')
         print('connected to reader on port {}'.format(reader_port))
         break
     except:
-        reader_port = reader_port + 1
+        reader_port += 1
         
 
 def client_messaged(client, data, msg):
@@ -53,6 +54,10 @@ def client_messaged(client, data, msg):
         reading_process.daemon = True
         scanning_process.daemon = True
         
+        reporting_manager.start_process()
+        reading_manager.start_process()
+        scanning_manager.start_process()
+        
         reporting_process.start() 
         reading_process.start()
         scanning_process.start()
@@ -70,6 +75,10 @@ def client_messaged(client, data, msg):
     # Kill reporting_process and scanning_process
     
     elif (msg.payload == b'stop'):
+        reporting_manager.stop_process()
+        reading_manager.stop_process()
+        scanning_manager.stop_process()
+        
         processes[0].terminate()
         processes[1].terminate()
         processes[2].terminate()
@@ -106,6 +115,10 @@ if __name__ == '__main__':
         client.loop_forever() # Prevents MQTT client from prematurely closing
     except:
         if len(processes) > 0:
+            reporting_manager.stop_process()
+            reading_manager.stop_process()
+            scanning_manager.stop_process()
+            
             processes[0].terminate()
             processes[1].terminate()
             processes[2].terminate()
@@ -113,3 +126,5 @@ if __name__ == '__main__':
         del reader
         
         GPIO.cleanup()
+        
+        print('closing')
