@@ -18,11 +18,11 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
-import node, log, rfidtag, re, json, pickle, io, datetime, threading, time
+import node, log, rfidtag, re, json, pickle, io, datetime, threading, time, atexit
 
 #region Variable Initialization
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets'] # Read and write permissions for program
-SPREADSHEET_ID = '1qrFQxaisVqFPFmdBzI8MSJnH-PSuc9i2sePcdpA0_PI' # Spreadsheet ID for list of ids, names, and clubs
+SPREADSHEET_ID = '' # Spreadsheet ID for list of ids, names, and clubs
 
 NODES_RANGE = 'readers!a2:b'
 STATUS_RANGE = 'ids!a2:f'
@@ -67,15 +67,19 @@ def on_message(client, data, msg):
   '''
 
   js = json.loads(str(msg.payload, 'utf-8')) # Deserialize JSON object to Python Object to allow for manipulation
-  curr_node = next(n for n in nodes if n.id == re.search('\/(.+)\/', msg.topic).group(1)) # Find out which unit this call came from
-  
+  curr_node = next(n for n in nodes if n.ID == re.search('\/(.+)\/', msg.topic).group(1)) # Find out which unit this call came from
+
   for item in js: 
     curr_tag_index = rfid_tags.index(next(t for t in rfid_tags if t.EPC == item['EPC'])) # Get index of the RFID tag associated with the log
+    
+    if curr_tag_index == -1:
+      continue
+
     rfid_tags[curr_tag_index].Node = curr_node # Update the tag's current Node
     rfid_tags[curr_tag_index].Status = rfidtag.Status(item['Status']) # Update the tag's status
 
     # Create the new log object and add it to the database
-    new_log = log.Log(rfid_tags[curr_tag_index], datetime.datetime.strptime(item['Time'], "%d/%m/%Y %H:%M:%S"), curr_node)
+    new_log = log.Log(rfid_tags[curr_tag_index], datetime.datetime.strptime(item['Time'], "%Y-%m-%dT%H:%M:%S.%f"), curr_node)
     logs.append(new_log)
 
     update_log_file(new_log, 'a')
@@ -141,7 +145,7 @@ def save_setup_file():
   '''
 
   # Creates wrapper of the data generated from the nodes, rfid_tags, and logs lists, pickles, and saves to HANDLER_FILE
-  pickle.dump([nodes, rfid_tags], open(HANDLER_FILE, mode='wb'))
+  pickle.dump([SPREADSHEET_ID, nodes, rfid_tags], open(HANDLER_FILE, mode='wb'))
 
   print_out(f'updated {HANDLER_FILE}')
 
@@ -209,11 +213,13 @@ def load_setup_file(data):
 
   global nodes
   global rfid_tags
+  global SPREADSHEET_ID
 
   obj = pickle.loads(data)
 
-  nodes = obj[0]
-  rfid_tags = obj[1]
+  SPREADSHEET_ID = obj[0]
+  nodes = obj[1]
+  rfid_tags = obj[2]
 
   print_out(f'loaded {HANDLER_FILE} file')
   
@@ -268,6 +274,147 @@ def automatic_sheet_update(service, updates = 6):
 def print_out(s):
   print(f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\t{s}")
 
+def exiting(client):
+  '''
+  Closes script, saves files, and disconnects the client.
+
+  Args:
+    client: client, the client instance for this callback
+  '''
+
+  global sheet_update_running
+  sheet_update_running = False
+  save_setup_file()
+  disconnect(client)
+  print_out('Stopping handler...')
+  exit()
+
+def command_reader(client, service):
+  global SPREADSHEET_ID
+
+  #region Print Commands
+  def show_help(err_msg = ""):
+    if not err_msg == "":
+      print(err_msg)
+
+    print("""Commands:
+      x
+        Description: Ends handler script
+      s [command] -option
+        Description: Accesses Google Spreadsheet
+        Commands:
+          c - ONLY changes current spreadsheet ID. Must specify spreadsheet ID.
+            Options:
+              SPREADSHEET_ID - Google Sheet ID
+          u - Updates Google Spreadsheet with current readers, tags, and logs. Must specify overwrite mode.
+            Options:
+              a - Append mode will append the logs to the end of the spreadsheet.
+              w - Write mode will truncate the current logs and write all current ones.
+          l - Load spreadsheet and overwrite current readers, tags, and logs.
+      r -option [ID|message] [message]
+        Description: Accesses readers
+        Options:
+          a - Accesses all readers. Must specify a message.
+          s - Acceses a single reader. Must specify a valid reader ID and message.
+          ID - ID of a reader. Refer to readers!a1:a for reader IDs on spreadsheet.
+          Message:
+            read - Tells readers to read like normal.
+            read_once - Tells readers to read one tag.
+            stop - Tells readers to stop reading.
+            test_sensors - Tells readers to continuously output sonic sensor reads. Only outputs to readers standard output.
+            test_reader - Tells readers to continously output RFID tag reads. Only outputs to readers standard output.
+      d [command]
+        Description: Displays data.
+        Commands:
+          a - Display spreadsheet ID, readers, RFID tags, and logs.
+          r - Display RFID tags.
+          n - Display readers.
+          s - Display spreadsheet ID.
+          l - Display logs.
+      h
+        Description: Gets help menu""")
+
+  def print_readers():
+    print("Nodes:\nID\tLocation")
+    for x in nodes:
+      print(x)
+
+  def print_rfids():
+    print("Registered Tags:\nEPC\tStatus\tOwner\tDescription\tLocation\tExtra")
+    for x in rfid_tags:
+      print(x)
+
+  def print_spreadsheet():
+    print(f"Spreadsheet ID: {SPREADSHEET_ID}")
+
+  def print_logs():
+    print("Logs:\nTimestamp\tStatus\tEPC\tOwner\tDescription\tLocation\tExtra")
+    for x in logs:
+      print(x)
+  #endregion
+
+  def read_command():
+    while True:
+      text = input()
+      command = re.search('^(\w)(?:\s(?:(\w)(?:\s-?(.+))?|-(\w)\s(\w+)(?:\s(\w+))?))?', text, flags=re.MULTILINE) 
+      
+      if command.group(1) == 'x':
+        break
+      elif command.group(1) == 's':
+        if command.group(2) == 'c':
+          SPREADSHEET_ID = command.group(3)
+        elif command.group(2) == 'u':
+          if command.group(3) == 'a' or command.group(3) == 'w':
+            save_sheet(service, log_mode=command.group(3))
+          else:
+            show_help('Must specify either "a" or "w" for the overwrite mode')
+        elif command.group(2) == 'l':
+          if input('You might have unsaved data. Are you sure you want to overwrite? (y/n)').capitalize() == 'Y':
+            load_sheets(service)
+            save_setup_file()
+            update_log_file(logs, 'w')
+            logs.clear()
+        else:
+          show_help(f"Unrecognized argument: {command.group(2)}")
+      elif command.group(1) == 'r':
+        if command.group(4) == 'a':
+          if command.group(5) == None:
+            show_help(f"Must specify a message to send to {', '.join(list(map(lambda n: n.ID, nodes)))}.")
+          for n in nodes:
+            publish.single('reader/{}/status'.format(n.ID), payload=bytes(command.group(5)), qos=1, hostname="broker.hivemq.com", port=8000, transport="websockets")
+        elif command.group(4) == 'i':
+          if not command.group(5) in list(map(lambda n: n.ID, nodes)):
+            show_help(f'Could not find reader {command.group(5)}.')
+          else:
+            if command.group(6) == None:
+              show_help(f"Must specify message to send to {command.group(5)}")
+            else:
+              publish.single('reader/{}/status'.format(command.group(5)), payload=bytes(command.group(6)), qos=1, hostname="broker.hivemq.com", port=8000, transport="websockets")
+        else:
+          show_help(f"Unrecognized argument: {command.group(4)}")
+      elif command.group(1) == 'd':
+        if command.group(2) == 'a':
+          print_spreadsheet()
+          print_readers()
+          print_rfids()
+          print_logs()
+        elif command.group(2) == 'r':
+          print_rfids()
+        elif command.group(2) == 'n':
+          print_readers()
+        elif command.group(2) == 's':
+          print_spreadsheet()
+        elif command.group(2) == 'l':
+          print_logs()
+        else:
+          show_help(f"Unrecognized argument: {command.group(2)}")
+      elif command.group(1) == 'h':
+        show_help()
+      else:
+        show_help(f"Unrecognized commmand: {text}")
+    exiting(client)
+  threading.Thread(target=read_command).start()
+
 if __name__ == '__main__':
   '''
   Setup for the handling of the tags received from each Node.
@@ -293,6 +440,7 @@ if __name__ == '__main__':
 
   # If the handler file is empty, pull data from GSheets, otherwise use data stored locally
   if rsf_data == b'':
+    SPREADSHEET_ID = input('Enter spreadsheet ID: ')
     load_sheets(service)
     save_setup_file()
     update_log_file(logs, 'w')
@@ -309,10 +457,7 @@ if __name__ == '__main__':
   client.connect('broker.hivemq.com', port=8000)
 
   try:
+    command_reader(client, service)
     client.loop_forever()
   except KeyboardInterrupt:
-    sheet_update_running = False
-    save_setup_file()
-    disconnect(client)
-    print_out('Stopping handler...')
-    exit()
+    exiting(client)

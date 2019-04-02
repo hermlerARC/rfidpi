@@ -4,4 +4,4 @@ class Node:
     self.Location = location
 
   def __str__(self):
-    return "{} : {}".format(self.ID, self.Location)
+    return f"{self.ID}\t{self.Location}"
