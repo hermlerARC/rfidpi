@@ -1,5 +1,7 @@
 # RFID Logging Software 
 
+This project was designed to aid the music department at American River College in preventing theft of instruments. It uses RFID technology and sonic readers to determine direction of travel to track the instruments location. It then sends this data using MQTT to a client, combined with tag data from other devices, where it is then processed and stored locally on the client file system. The data is then uploaded to Google Sheets on an interval or when manually instructed.
+
 ## Parts Used:
 * 1 x [Raspberry Pi Model 3](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/)
 * 1 x [ThingMagic USB RFID Reader](https://www.atlasrfidstore.com/thingmagic-usb-plus-rfid-reader/)
@@ -34,4 +36,6 @@ pip3 install paho-mqtt
 8. Send handler.py the command: `r -a read`
 
 ## Notes
+- Contributors: Dominique Stepek, Gavin Furlong, and Prof. Ryan Hermle
+- More reading: [Google Sheets API](https://developers.google.com/sheets/api/), [MQTT](http://mqtt.org/), [Mercury API for Python](https://github.com/gotthardp/python-mercuryapi) 
 - `RFID-Checkin/Backend Handling/handler.py` supports the ability to interface with the local storage, sheets, and nodes through commands. Just input `h` for help.
