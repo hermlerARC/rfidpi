@@ -38,7 +38,7 @@ pip3 install paho-mqtt
 8. Send handler.py the command: `r -a read`
 
 ## Notes
-- Contributors: Dominique Stepek, Gavin Furlong, and Prof. Ryan Hermle
+- Contributors: Dominique Stepek, Gavin Furlong,  Abdullah Shabir, Prof. Ryan Hermle
 - More reading: [Google Sheets API](https://developers.google.com/sheets/api/), [MQTT](http://mqtt.org/), [Mercury API for Python](https://github.com/gotthardp/python-mercuryapi) 
 - `RFID-Checkin/Backend Handling/handler.py` supports the ability to interface with the local storage, sheets, and nodes through commands. Just input `h` for help.
 - This project was programmed to interface with the Mercury API which requires ThingMagic RFID readers. 
