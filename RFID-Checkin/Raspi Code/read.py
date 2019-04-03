@@ -68,8 +68,7 @@ def client_messaged(client, data, msg):
     
     elif (msg.payload == b'read_once'):
         tag_data = reading_manager.read_once(reader)
-        active_tags = scanning_manager.create_tags(tag_data, 0)
-        client.publish('reader/{}/active_tag'.format(RASPI_ID), json.dumps(active_tags), qos=1)
+        client.publish('reader/{}/scanned'.format(RASPI_ID), json.dumps(tag_data), qos=1)
             
     # When 'stop' is posted on the topic 'reader/{RASPI_ID}/status'
     # Kill reporting_process and scanning_process
@@ -122,8 +121,6 @@ if __name__ == '__main__':
             processes[0].terminate()
             processes[1].terminate()
             processes[2].terminate()
-        
-        del reader
         
         GPIO.cleanup()
         

@@ -60,6 +60,14 @@ def test_reader(reader):
     print("Stopping test...")
     
     
+def read_once(reader):
+    tag_data = reader.read()
+    if len(tag_data) > 0:
+        return {
+            'EPC' : str(tag_data[0].epc, 'utf-8')
+        }
+        
+    
 def read(reader):
     global tags
     
