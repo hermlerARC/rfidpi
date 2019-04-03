@@ -324,9 +324,9 @@ def command_reader(client, service):
       print(err_msg)
 
     print("""Commands:
-      x
+      exit|x
         Description: Ends handler script
-      s [command] -option
+      spreadsheet|s [command] -option
         Description: Accesses Google Spreadsheet
         Commands:
           c - ONLY changes current spreadsheet ID. Must specify spreadsheet ID.
@@ -337,7 +337,7 @@ def command_reader(client, service):
               a - Append mode will append the logs to the end of the spreadsheet.
               w - Write mode will truncate the current logs and write all current ones.
           l - Load spreadsheet and overwrite current readers, tags, and logs.
-      r -option [ID|message] [message]
+      readers|r -option [ID|message] [message]
         Description: Accesses readers
         Options:
           a - Accesses all readers. Must specify a message.
@@ -349,7 +349,7 @@ def command_reader(client, service):
             stop - Tells readers to stop reading.
             test_sensors - Tells readers to continuously output sonic sensor reads. Only outputs to readers standard output.
             test_reader - Tells readers to continously output RFID tag reads. Only outputs to readers standard output.
-      d [command]
+      display|d [command]
         Description: Displays data.
         Commands:
           a - Display spreadsheet ID, readers, RFID tags, and logs.
@@ -357,7 +357,7 @@ def command_reader(client, service):
           n - Display readers.
           s - Display spreadsheet ID.
           l - Display logs.
-      h
+      help|h
         Description: Gets help menu""")
 
   def print_readers():
@@ -384,15 +384,15 @@ def command_reader(client, service):
       if text == "":
         continue
 
-      command = re.search('^(\w)(?:\s(?:(\w)(?:\s-?(.+))?|-(\w)\s(\w+)(?:\s(\w+))?))?', text, flags=re.MULTILINE)  # Applies regex pattern to input
+      command = re.search('^(\w+)(?:\s(?:(\w)(?:\s-?(.+))?|-(\w)\s(\w+)(?:\s(\w+))?))?', text, flags=re.MULTILINE)  # Applies regex pattern to input
       
       if command_input == False:
         command_queue.put(text)
         continue
       # Reads commands
-      if command.group(1) == 'x':
+      if command.group(1) == 'x' or command.group(1) == 'exit':
         break
-      elif command.group(1) == 's':
+      elif command.group(1) == 's' or command.group(1) == 'spreadsheet':
         if command.group(2) == 'c':
           SPREADSHEET_ID = command.group(3)
         elif command.group(2) == 'u':
@@ -408,7 +408,7 @@ def command_reader(client, service):
             logs.clear()
         else:
           show_help(f"Unrecognized argument: {command.group(2)}")
-      elif command.group(1) == 'r':
+      elif command.group(1) == 'r' or command.group(1) == 'readers':
         if command.group(4) == 'a':
           if command.group(5) == None:
             show_help(f"Must specify a message to send to {', '.join(list(map(lambda n: n.ID, nodes)))}.")
@@ -424,7 +424,7 @@ def command_reader(client, service):
               publish.single(f'reader/{command.group(5)}/status', payload=command.group(6), qos=1, hostname="broker.hivemq.com", port=8000, transport="websockets")
         else:
           show_help(f"Unrecognized argument: {command.group(4)}")
-      elif command.group(1) == 'd':
+      elif command.group(1) == 'd' or command.group(1) == 'display':
         if command.group(2) == 'a':
           print_spreadsheet()
           print_readers()
@@ -440,7 +440,7 @@ def command_reader(client, service):
           print_logs()
         else:
           show_help(f"Unrecognized argument: {command.group(2)}")
-      elif command.group(1) == 'h':
+      elif command.group(1) == 'h' or command.group(1) == 'help':
         show_help()
       else:
         show_help(f"Unrecognized commmand: {text}")
