@@ -5,23 +5,21 @@ Description (handler.py):
 Handles the receiving and logging of tag reads from all nodes and submitting to GSheets and local database.
 
 Contributors:
-Dom Stepek, Gavin Furlong
+Dom Stepek, Gavin Furlong, Ryan Hermle, Abdullah Shabir
 
 To read more about the Google API, go to : https://developers.google.com/identity/protocols/OAuth2
 To read more about MQTT for Python, go to: https://pypi.org/project/paho-mqtt/
 To read more about Mercury API for Python, go to: https://github.com/gotthardp/python-mercuryapi
 
-Edited on: March 29, 2019
+Edited on: April 4, 2019
 '''
 
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
-import node, log, rfidtag, re, json, pickle, io, datetime, threading, time, queue, sys
+import node, log, rfidtag, re, json, pickle, io, datetime, threading, time, queue
 from pathlib import Path
-
-#TODO: Fix exiting/automatic_update_function. Thread doesn't exit out.
 
 #region Variable Initialization
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets'] # Read and write permissions for program
@@ -42,8 +40,7 @@ logs = []
 service_obj = None
 client_obj = None
 
-exited = False
-sheet_update_running = False
+multi_call = False # Prevents several similar calls to Google Sheets API
 command_input = True
 command_queue = queue.Queue()
 #endregion
@@ -63,20 +60,26 @@ def on_message(client, data, msg):
   Args:
     client: client, the client instance for this callback
     data: string, userdata on the call
-    message: an instance of MQTTMessage. This is a class with members topic, payload, qos, retain. Formatted as follows:\n
+    message: an instance of MQTTMessage. This is a class with members topic, payload, qos, retain.\n
+    Formatted as follows on active_tag topic:\n
       [
         {
-            "EPC": {epc},
-            "Time": {timestamp},
-            "Status": {status of tag},
-            "RSSI": {strength of the tag signal}
+            "EPC" : {epc},
+            "Time" : {timestamp},
+            "Status" : {status of tag},
+            "RSSI" : {strength of the tag signal}
         },
         ...
-      ]
+      ]\n
+    Formatted as follows on response topic:\n
+      {
+        "MESSAGE" : {response}
+      }
   '''
 
   global command_input
   global command_queue
+  global multi_call
 
   js = json.loads(str(msg.payload, 'utf-8')) # Deserialize JSON object to Python Object to allow for manipulation
   curr_node = next(n for n in nodes if n.ID == re.search('\/(.+)\/', msg.topic).group(1)) # Find out which unit this call came from
@@ -84,14 +87,17 @@ def on_message(client, data, msg):
   
   if topic == 'response':
     print_out(f'sent "{js["MESSAGE"]}" to {curr_node.ID}')
+
     if js['MESSAGE'] == 'read':
-      nodes[nodes.index(curr_node)].Status = node.Status.Running
-      save_setup_file()
-      save_sheet(log_mode='x')
+      if not multi_call:
+        nodes[nodes.index(curr_node)].Status = node.Status.Running
+        save_setup_file()
+        save_sheet(log_mode='x')
     elif js['MESSAGE'] == 'stop':
       nodes[nodes.index(curr_node)].Status = node.Status.Stopped
-      save_setup_file()
-      save_sheet(log_mode='x')
+      if not multi_call:
+        save_setup_file()
+        save_sheet(log_mode='x')
     elif js['MESSAGE'] == 'ping':
       print_out(f'connected to {curr_node.ID}')
   else:
@@ -311,8 +317,6 @@ def automatic_sheet_update(updates = 6):
     time_count = time_count + 1
     time.sleep(1)
 
-  print_out('closing automatic sheet updates')
-
 def print_out(s):
   print(f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\t{s}")
 
@@ -324,6 +328,7 @@ def command_reader():
   global SPREADSHEET_ID
   global command_input
   global command_queue
+  global multi_call
 
   #region Print Commands
   def show_help(err_msg = ""):
@@ -343,13 +348,14 @@ spreadsheet|s [command] -option
       Options:
         a - Append mode will append the logs to the end of the spreadsheet.
         w - Write mode will truncate the current logs and write all current ones.
+        x - Doesn't modify the logs sheet at all.
     l - Load spreadsheet and overwrite current readers, tags, and logs.
 readers|r -option [ID|message] [message]
   Description: Accesses readers
   Options:
     a - Accesses all readers. Must specify a message.
     i - Acceses a single reader. Must specify a valid reader ID and message.
-    d - Direct edit local storage of a node. Must use special arguments afterwards "[ID] [location=''],[status='']". Recommend calling 's u -x' after.
+    d - Directly edit local storage of a node. Must use special arguments afterwards "[ID] [location=''],[status='']". Recommend calling 's u -x' after.
       location - New location for the reader. Leave blank to keep the same.
       status - Must enter either "running" or "stopped". Leave blank to keep the same.
     ID - ID of a reader. Refer to readers!a1:a for reader IDs on spreadsheet.
@@ -396,20 +402,26 @@ help|h
 
       command = re.search('^(\w+)(?:\s(?:(\w)(?:\s-?(.+))?|-(\w)\s(\w+)(?:\s(.+))?))?', text, flags=re.MULTILINE)  # Applies regex pattern to input
       
+      # Handles the scenario in which a different thread needs to use the standard input
       if command_input == False:
         command_queue.put(text)
         continue
+
       # Reads commands
-      if command.group(1) == 'x' or command.group(1) == 'exit':
+      if command.group(1) == 'x' or command.group(1) == 'exit': # Exit command
         break
-      elif command.group(1) == 's' or command.group(1) == 'spreadsheet':
+      elif command.group(1) == 's' or command.group(1) == 'spreadsheet': # Spreadsheet command
+        # Handles 'spreadsheet c'
         if command.group(2) == 'c':
-          SPREADSHEET_ID = command.group(3)
+          if re.match("[a-zA-Z0-9-_]+", command.group(3)):
+            SPREADSHEET_ID = command.group(3)
+          else:
+            show_help(f'Invalid spreadsheet ID: {command.group(3)}')
         elif command.group(2) == 'u':
           if command.group(3) == 'a' or command.group(3) == 'w' or command.group(3) == 'x':
             save_sheet(log_mode=command.group(3))
           else:
-            show_help('Must specify either "a" or "w" for the overwrite mode')
+            show_help("Must specify either 'a', 'w', or 'x' for the overwrite mode")
         elif command.group(2) == 'l':
           if input('You might have unsaved data. Are you sure you want to overwrite? (y/n)').capitalize() == 'Y':
             load_sheets()
@@ -421,16 +433,21 @@ help|h
       elif command.group(1) == 'r' or command.group(1) == 'readers':
         if command.group(4) == 'a':
           if command.group(5) == None:
-            show_help(f"Must specify a message to send to {', '.join(list(map(lambda n: n.ID, nodes)))}.")
+            show_help(f"Must specify a message to send to {', '.join(list(map(lambda n: n.ID, nodes)))}")
           else:
+            multi_call = True
             for n in nodes:
               send_message(f'reader/{n.ID}/status', command.group(5)) # Send current node the command
+            time.sleep(.1) # Prevents on_connect() from saving too many times
+            multi_call = False
+            save_setup_file()
+            save_sheet(log_mode='x')
         elif command.group(4) == 'i':
           if not command.group(5) in list(map(lambda n: n.ID, nodes)):
-            show_help(f'Could not find reader {command.group(5)}.')
+            show_help(f'Could not find reader: {command.group(5)}')
           else:
             if command.group(6) == None:
-              show_help(f"Must specify message to send to {command.group(5)}")
+              show_help(f"Must specify message to send to: {command.group(5)}")
             else:
               send_message(f'reader/{command.group(5)}/status', command.group(6)) # Send node the command
         elif command.group(4) == 'd':
@@ -444,7 +461,7 @@ help|h
             if stat.title() == 'Running' or stat.title() == 'Stopped':
               nodes[index].Status = node.Status[stat.title()]
             elif stat != '':
-              show_help('Status must be either "Running or Stopped"')
+              show_help(f"Unrecognized status: '{stat}'. Status must be either 'Running' or 'Stopped'")
           else:
             show_help('Must specify a node ID.')
         else:
@@ -464,14 +481,18 @@ help|h
         elif command.group(2) == 'l':
           print_logs()
         else:
-          show_help(f"Unrecognized argument: {text}")
+          show_help(f"Unrecognized argument: '{text}'")
       elif command.group(1) == 'h' or command.group(1) == 'help':
         show_help()
       else:
-        show_help(f"Unrecognized commmand: {text}")
+        show_help(f"Unrecognized commmand: '{text}'")
+
+    # Only gets activated when user enters the exit command
+    multi_call = True 
     disconnect()
     print_out('closing handler.py')
   
+  # Start the thread
   rc_thread = threading.Thread(target=read_command)
   rc_thread.daemon = True
   rc_thread.start()
@@ -496,8 +517,11 @@ if __name__ == '__main__':
   Path(HANDLER_FILE).touch()
   Path(LOG_FILE).touch()
 
+  # Get setup data from HANDLER_FILE
   with open(HANDLER_FILE, mode='r+b') as hf:
     rsf_data = hf.read()
+
+  # Check to see if LOG_FILE has any data in it and if it doesn't, add a header.
   with open(LOG_FILE, mode='r+') as lf:
     csv_data = lf.read(1)
     if (csv_data == ''):
@@ -513,10 +537,12 @@ if __name__ == '__main__':
   else:
     load_setup_file(rsf_data)
     
+  # Create a new thread to handle the automatic sheet updates
   asu_thread = threading.Thread(target=automatic_sheet_update, args=(6,))
   asu_thread.daemon = True
   asu_thread.start()
 
+  # Setup client_obj
   client_obj = mqtt.Client(transport='websockets') # Connect with websockets
   client_obj.on_connect = on_connect
   client_obj.on_message = on_message
@@ -524,8 +550,9 @@ if __name__ == '__main__':
   client_obj.connect('broker.hivemq.com', port=8000)
 
   try:
-    command_reader()
-    client_obj.loop_forever()
+    command_reader() # Start command reading thread
+    client_obj.loop_forever() # Automatically handle reconnecting to the MQTT client in case of timeout.
   except KeyboardInterrupt:
+    multi_call = True
     disconnect()
     print('ERROR: Data can be corrupted in the Google Sheets spreadsheet.\nClose script using the command "exit" next time.\nUpon reopening the script, run the command "s u -x".')
