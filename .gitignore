@@ -1,1 +1,5 @@
-RFID-Checkin/Backend Handling/data
+*.json
+*.csv
+*.rsf
+
+RFID-Checkin/Backend Handling/data/
