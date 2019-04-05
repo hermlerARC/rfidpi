@@ -15,7 +15,7 @@ This project was designed to aid the music department at American River College 
 ### How RFID Works
 ![rfid diagram](https://howtomechatronics.com/wp-content/uploads/2017/05/RFID-Working-Principle.png)
 ## Install Instructions:
-1. Get a duplicate of the [spreadsheet template](https://docs.google.com/spreadsheets/d/1U1NcnHXWjDb0NeJ3oTpLPU2vhdeKHef8IizWEw00A-0/edit?usp=sharing).
+1. Get a duplicate of the [spreadsheet template](https://docs.google.com/spreadsheets/d/1IgreAi3hvmLa3X66jhwo6dZCcqReNV2zIlWpLoTB3LY).
 2. Share the document with security-head@rfid-security-221905.iam.gserviceaccount.com. *(Optional)* You can create and share with your own service account by following these [instructions](https://developers.google.com/identity/protocols/OAuth2ServiceAccount). Just make sure to enable the Google Sheets API.
 3. Install dependencies on the client. These libraries must be installed on Python 3.6+.
 ```

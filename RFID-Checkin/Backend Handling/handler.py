@@ -92,6 +92,8 @@ def on_message(client, data, msg):
       nodes[nodes.index(curr_node)].Status = node.Status.Stopped
       save_setup_file()
       save_sheet(log_mode='x')
+    elif js['MESSAGE'] == 'ping':
+      print_out(f'connected to {curr_node.ID}')
   else:
     if topic == 'scanned':
       print_out(f"scanned tag with EPC: {js['EPC']}")
@@ -119,13 +121,21 @@ def on_message(client, data, msg):
         update_log_file(new_log, 'a')
     save_setup_file()
 
+def on_subscribe(client, userdata, mid, granted_qos):
+  '''
+  Pings all nodes to see if they are responsive.
+  '''
+  # Every 3 subscribe calls. 
+  if mid % 3 == 0:
+    send_message(f'reader/{nodes[int(mid / 3 - 1)].ID}/status', 'ping') # Ping to see if node is responsive
+
 def on_connect(client, data, flags, rc):
   # Connects to every Node
   for n in nodes:
     client.subscribe(f'reader/{n.ID}/active_tag', 1) # Listener for tag reads
     client.subscribe(f'reader/{n.ID}/scanned', 1) # Listener for single scans
     client.subscribe(f'reader/{n.ID}/response', 1) # Listener for response
-  print_out(f'connected to {", ".join(list(map(lambda n: n.ID, nodes)))}')
+    send_message(f"reader/{n.ID}/status", "ping")
 
 def disconnect():
   '''
@@ -306,14 +316,6 @@ def automatic_sheet_update(updates = 6):
 def print_out(s):
   print(f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\t{s}")
 
-def exiting():
-  '''
-  Closes script, saves files, and disconnects the client.
-  '''
-  save_setup_file()
-  disconnect()
-  print_out('stopping handler...')
-
 def command_reader():
   '''
   Starts seperate thread that executes commands read from the standard input.
@@ -467,7 +469,8 @@ help|h
         show_help()
       else:
         show_help(f"Unrecognized commmand: {text}")
-    exiting()
+    disconnect()
+    print_out('closing handler.py')
   
   rc_thread = threading.Thread(target=read_command)
   rc_thread.daemon = True
@@ -517,11 +520,12 @@ if __name__ == '__main__':
   client_obj = mqtt.Client(transport='websockets') # Connect with websockets
   client_obj.on_connect = on_connect
   client_obj.on_message = on_message
+  client_obj.on_subscribe = on_subscribe
   client_obj.connect('broker.hivemq.com', port=8000)
 
   try:
     command_reader()
     client_obj.loop_forever()
   except KeyboardInterrupt:
-    exiting()
+    disconnect()
     print('ERROR: Data can be corrupted in the Google Sheets spreadsheet.\nClose script using the command "exit" next time.\nUpon reopening the script, run the command "s u -x".')
