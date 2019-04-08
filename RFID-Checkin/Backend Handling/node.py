@@ -14,4 +14,4 @@ class Node:
     self.Status = stat
 
   def __str__(self):
-    return f"{self.ID}\t{self.Location}\t{str(self.Status)}"
+    return f"{self.ID},{self.Location},{str(self.Status)}"

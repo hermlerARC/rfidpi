@@ -21,6 +21,7 @@ This project was designed to aid the music department at American River College 
 ```
 pip3 install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 pip3 install paho-mqtt
+pip3 install tabulate
 ```
 4. Install dependencies on the Raspberry Pi:
 This will soon be deprecated as a duplicable image is made for the Raspberry Pi. Must be installed on Python 3.5+.

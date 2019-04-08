@@ -13,13 +13,13 @@ To read more about Mercury API for Python, go to: https://github.com/gotthardp/p
 
 Edited on: April 4, 2019
 '''
-
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
-import node, log, rfidtag, re, json, pickle, io, datetime, threading, time, queue
+import node, log, rfidtag, re, json, pickle, io, datetime, threading, time, queue, enum
 from pathlib import Path
+from tabulate import tabulate
 
 #region Variable Initialization
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets'] # Read and write permissions for program
@@ -33,6 +33,8 @@ HANDLER_FILE = 'data/handler.rsf'
 LOG_FILE = 'data/logs.csv'
 SERVICE_ACCOUNT_FILE = 'data/service_account.json'
 
+DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
+
 nodes = []
 rfid_tags = []
 logs = []
@@ -40,20 +42,62 @@ logs = []
 service_obj = None
 client_obj = None
 
-multi_call = False # Prevents several similar calls to Google Sheets API
 command_input = True
 command_queue = queue.Queue()
+
+response_queue = queue.Queue(maxsize=1)
+
+asu_running = False
+cr_running = False
+
+class MQTTResponse(enum.Enum):
+  SUCCESSFUL = 0
+  FAILED = 1
 #endregion
 
 #region Client Handling
-def send_message(topic, msg):
-  publish.single(topic, payload=msg, qos=1, hostname="broker.hivemq.com", port=8000, transport="websockets")
 
+def send_message(topic, msg, timeout = None): 
+  """
+  Posts a single message to the topic, waits for a response, and returns a status code.
+
+  Args:
+    topic: str, the MQTT topic to post the message. Ex: 'reader/12345/active_tag'
+    msg: bytes, data that will be posted to the topic.
+    timeout: int, seconds to wait a message to be received.
+
+  Returns: MQTTResponse, whether or not the message was received within the timeout
+  """
+  global response_queue
+
+  response_code = MQTTResponse.FAILED
+
+  def run():
+    # Send message
+    publish.single(topic, payload=msg, qos=1, hostname="broker.hivemq.com", port=8000, transport="websockets")
+    response = None
+
+    # Receive node response
+    try:
+      response = response_queue.get(timeout=timeout)
+    except queue.Empty:
+      return
+
+    # Check to see the response matches the message sent
+    if response['topic'] == topic and response['msg'] == msg:
+      response_code = MQTTResponse.SUCCESSFUL
+
+  run_thread = threading.Thread(target=run)
+  run_thread.daemon = True
+  run_thread.start()
+
+  return response_code
+  
 def on_message(client, data, msg):
   '''
   Appends new logs from the JSON file received.
 
-  Unpacks the data (in JSON format) into a Python object, finds out which node the message came from,
+  Unpacks the data (in JSON format) into a Python object, determines the node which sent the message,
   creates a new log object, updates the rfid tags list with new log data, and appends the log
   object to the log file.
     
@@ -79,63 +123,58 @@ def on_message(client, data, msg):
 
   global command_input
   global command_queue
-  global multi_call
 
   js = json.loads(str(msg.payload, 'utf-8')) # Deserialize JSON object to Python Object to allow for manipulation
-  curr_node = next(n for n in nodes if n.ID == re.search('\/(.+)\/', msg.topic).group(1)) # Find out which unit this call came from
-  topic = re.search('reader\/.+\/(\w+)', msg.topic).group(1)
-  
-  if topic == 'response':
-    print_out(f'sent "{js["MESSAGE"]}" to {curr_node.ID}')
+  curr_node = next(n for n in nodes if n.ID == re.search(r'\/(.+)\/', msg.topic).group(1)) # Find out which unit this call came from
+  topic = re.search(r'reader\/.+\/(\w+)', msg.topic).group(1)
 
-    if js['MESSAGE'] == 'read':
-      if not multi_call:
+  if topic == 'response':
+    if js['MESSAGE'] == 'ping':
+      print_out(f'connected to {curr_node.ID}')
+    else:
+      print_out(f'sent "{js["MESSAGE"]}" to {curr_node.ID}')
+      if js['MESSAGE'] == 'read':
         nodes[nodes.index(curr_node)].Status = node.Status.Running
         save_setup_file()
-        save_sheet(log_mode='x')
-    elif js['MESSAGE'] == 'stop':
-      nodes[nodes.index(curr_node)].Status = node.Status.Stopped
-      if not multi_call:
+      elif js['MESSAGE'] == 'stop':
+        nodes[nodes.index(curr_node)].Status = node.Status.Stopped
         save_setup_file()
-        save_sheet(log_mode='x')
-    elif js['MESSAGE'] == 'ping':
-      print_out(f'connected to {curr_node.ID}')
-  else:
-    if topic == 'scanned':
-      print_out(f"scanned tag with EPC: {js['EPC']}")
-      print('Input status, owner, description, and extra information for this tag, seperated by a ","')
-      command_input = False
-      data = command_queue.get().split(sep=',')
-      command_input = True
-
-      new_tag = rfidtag.RFIDTag(js['EPC'], rfidtag.Status[data[0].title()], data[1].title(), data[2].title(), curr_node, data[3].title())
-      rfid_tags.append(new_tag)
-    elif topic == 'active_tags':
-      for item in js: 
-        curr_tag_index = rfid_tags.index(next(t for t in rfid_tags if t.EPC == item['EPC'])) # Get index of the RFID tag associated with the log
         
-        if curr_tag_index == -1:
-          continue
+    response_queue.put({
+      'topic' : msg.topic,
+      'msg' : js['MESSAGE']
+    })
+  elif topic == 'scanned':
+    command_input = False
+    print_out(f"scanned tag with EPC: {js['EPC']}")
+    print('Status,Owner,Description,Extra:')
+    data = re.sub(r'(?<=,)(\s)', '', command_queue.get()).split(sep=',') # Gets input from command queue, replaces any excess whitespace, splits by commas
+    command_input = True
 
-        rfid_tags[curr_tag_index].Node = curr_node # Update the tag's current Node
-        rfid_tags[curr_tag_index].Status = rfidtag.Status(item['Status']) # Update the tag's status
+    new_tag = rfidtag.RFIDTag(js['EPC'], rfidtag.Status[data[0].title()], data[1].title(), data[2].title(), curr_node, data[3].title())
+    rfid_tags.append(new_tag)
+    save_setup_file()
+  elif topic == 'active_tag':
+    for item in js: 
+      curr_tag_index = rfid_tags.index(next(t for t in rfid_tags if t.EPC == item['EPC'])) # Get index of the RFID tag associated with the log
+      
+      if curr_tag_index == -1:
+        continue
 
-        # Create the new log object and add it to the database
-        new_log = log.Log(rfid_tags[curr_tag_index], datetime.datetime.strptime(item['Time'], "%Y-%m-%dT%H:%M:%S.%f"), curr_node)
-        logs.append(new_log)
+      rfid_tags[curr_tag_index].Node = curr_node # Update the tag's current Node
+      rfid_tags[curr_tag_index].Status = rfidtag.Status(item['Status']) # Update the tag's status
 
-        update_log_file(new_log, 'a')
+
+      # Create the new log object and add it to the database
+      new_log = log.convert_to_log(rfid_tags[curr_tag_index], datetime.strptime(item['Time'], DATETIME_FORMAT), curr_node)
+      logs.append(new_log)
+
+      print('item logged')
+      update_log_file(new_log, 'a')
     save_setup_file()
 
-def on_subscribe(client, userdata, mid, granted_qos):
-  '''
-  Pings all nodes to see if they are responsive.
-  '''
-  # Every 3 subscribe calls. 
-  if mid % 3 == 0:
-    send_message(f'reader/{nodes[int(mid / 3 - 1)].ID}/status', 'ping') # Ping to see if node is responsive
-
 def on_connect(client, data, flags, rc):
+  print_out('connecting to nodes...')
   # Connects to every Node
   for n in nodes:
     client.subscribe(f'reader/{n.ID}/active_tag', 1) # Listener for tag reads
@@ -152,12 +191,35 @@ def disconnect():
   # Sends every Node a 'stop' message.
   for n in nodes:
     send_message(f'reader/{n.ID}/status', b'stop')
+
   client_obj.disconnect()
   
   print_out('disconnecting client')
 #endregion
 
 #region File Handling
+def get_logs(rows):
+  '''
+  Retreives a list of logs from the LOGS_FILE with specified rows.
+
+  Args:
+    rows: int, max amount of rows to retrieve (most recent logs have priority).
+  '''
+  global nodes
+
+  logs = []
+  count = 0
+  with open(LOG_FILE, mode='r') as lf:
+    for l in lf:
+
+      # Skips header
+      if count == 0: 
+        count += 1
+        continue
+
+      logs.append(log.convert_to_log(l, nodes))
+  return logs if rows == None else logs[-int(rows):]
+
 def update_log_file(l, write_mode = 'a'):
   '''
   Appends to the log file a new instance.
@@ -220,7 +282,7 @@ def save_sheet(log_mode = 'a'):
 
   node_vals = list(map(lambda n: [n.ID, n.Location, str(n.Status)], nodes))
   rfid_tag_vals = list(map(lambda r: [r.EPC, str(r.Status), r.Owner, r.Description, r.Node.Location, r.Extra], rfid_tags))
-  log_vals = list(map(lambda l: [l.Timestamp.strftime("%d/%m/%Y %H:%M:%S"), str(l.Status), l.EPC, l.Owner, l.Description, l.Node.Location, l.Extra], logs))
+  log_vals = list(map(lambda l: [l.Timestamp.strftime(DATETIME_FORMAT), str(l.Status), l.EPC, l.Owner, l.Description, l.Node.Location, l.Extra], logs))
 
   # Tell GSheets that we want to it to post our data by column
   node_resource = {
@@ -245,6 +307,7 @@ def save_sheet(log_mode = 'a'):
   
   if (log_mode == 'a'):
     service_obj.spreadsheets().values().append(spreadsheetId=SPREADSHEET_ID, range=LOGS_RANGE, body=logs_resource, valueInputOption="RAW").execute()
+    logs.clear() # Prevent duplicates being added to the spreadsheet
   elif (log_mode == 'w'):
     service_obj.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=LOGS_RANGE, body=logs_resource, valueInputOption="RAW").execute()
 
@@ -291,7 +354,7 @@ def load_sheets():
 
   # Get logs from spreadsheet
   log_values = service_obj.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=LOGS_RANGE).execute().get('values', [])
-  logs = list(map(lambda val: log.Log(next(tag for tag in rfid_tags if tag.EPC == val[2]), datetime.datetime.strptime(val[0], "%d/%m/%Y %H:%M:%S"), next(n for n in nodes if n.Location == val[5])), log_values))
+  logs = list(map(lambda val: log.convert_to_log(','.join(val), nodes), log_values))
 
   print_out(f'loaded from {SPREADSHEET_ID} sheet')
 
@@ -305,10 +368,11 @@ def automatic_sheet_update(updates = 6):
   Args:
     update: int, amount of sheet updates per day.
   '''
+  global asu_running
   time_count = 0
    
   print_out('running automatic sheet updates')
-  while True:
+  while asu_running:
     if time_count == (24 / updates) * 3600:
       save_sheet(log_mode='a')
       logs.clear()
@@ -318,7 +382,7 @@ def automatic_sheet_update(updates = 6):
     time.sleep(1)
 
 def print_out(s):
-  print(f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\t{s}")
+  print(f"{datetime.datetime.now().strftime(DATETIME_FORMAT)}\t{s}")
 
 def command_reader():
   '''
@@ -328,7 +392,7 @@ def command_reader():
   global SPREADSHEET_ID
   global command_input
   global command_queue
-  global multi_call
+  global cr_running
 
   #region Print Commands
   def show_help(err_msg = ""):
@@ -365,7 +429,7 @@ readers|r -option [ID|message] [message]
       stop - Tells readers to stop reading.
       test_sensors - Tells readers to continuously output sonic sensor reads. Only outputs to readers standard output.
       test_reader - Tells readers to continously output RFID tag reads. Only outputs to readers standard output.
-display|d [command]
+display|d [command] [results]
   Description: Displays data.
   Commands:
     a - Display spreadsheet ID, readers, RFID tags, and logs.
@@ -373,50 +437,56 @@ display|d [command]
     n - Display readers.
     s - Display spreadsheet ID.
     l - Display logs.
+  Results:
+    integer, the amount of logs to display (more recent logs have priority)
+
 help|h
   Description: Gets help menu""")
 
   def print_readers():
-    print("Nodes:\n\tID\tLocation\tStatus")
-    for x in nodes:
-      print(f"\t{x}")
+    print('\r\nNodes:\r\n')
+    node_vals = list(map(lambda v: str(v).split(sep=','), nodes))
+    print(tabulate(node_vals, headers=['ID', 'Location', 'Status'], tablefmt="rst"))
 
   def print_rfids():
-    print("Registered Tags:\n\tEPC\tStatus\tOwner\tDescription\tLocation\tExtra")
-    for x in rfid_tags:
-      print(f"\t{x}")
+    print('\r\nIDs:\r\n')
+    rfid_tag_vals = list(map(lambda v: str(v).split(sep=','), rfid_tags))
+    print(tabulate(rfid_tag_vals, headers=['EPC', 'Status', 'Owner', 'Description', 'Location', 'Extra'], tablefmt="rst"))
 
   def print_spreadsheet():
-    print(f"Spreadsheet ID: {SPREADSHEET_ID}")
+    print('\r\n')
+    print(tabulate([[SPREADSHEET_ID]], headers=['Spreadsheet ID'], tablefmt="rst"))
 
-  def print_logs():
-    print("Logs:\n\tTimestamp\tStatus\tEPC\tOwner\tDescription\tLocation\tExtra")
-    for x in logs:
-      print(f"\t{x}")
+  def print_logs(rows):
+    print('\r\nLogs:\r\n')
+    log_vals = list(map(lambda v: str(v).split(sep=','), get_logs(rows)))
+    print(tabulate(log_vals, headers=['Timestamp', 'Status', 'EPC', 'Owner', 'Description', 'Location', 'Extra'], tablefmt="rst"))
+
   #endregion
   def read_command():
-    while True:
+    while cr_running:
       text = input() # Gets input from standard input
       if text == "":
         continue
 
-      command = re.search('^(\w+)(?:\s(?:(\w)(?:\s-?(.+))?|-(\w)\s(\w+)(?:\s(.+))?))?', text, flags=re.MULTILINE)  # Applies regex pattern to input
-      
       # Handles the scenario in which a different thread needs to use the standard input
       if command_input == False:
         command_queue.put(text)
         continue
 
+      command = re.search(r'^(\w+)(?:\s(?:(\w)(?:\s-?(.+))?|-(\w)\s(\w+)(?:\s(.+))?))?', text, flags=re.MULTILINE)  # Applies regex pattern to input
+      
       # Reads commands
       if command.group(1) == 'x' or command.group(1) == 'exit': # Exit command
+        print_out('closing handler.py...')
         break
       elif command.group(1) == 's' or command.group(1) == 'spreadsheet': # Spreadsheet command
         # Handles 'spreadsheet c'
         if command.group(2) == 'c':
-          if re.match("[a-zA-Z0-9-_]+", command.group(3)):
+          if re.match("^[a-zA-Z0-9-_]+$", command.group(3), flags=re.MULTILINE):
             SPREADSHEET_ID = command.group(3)
           else:
-            show_help(f'Invalid spreadsheet ID: {command.group(3)}')
+            show_help(f"Invalid spreadsheet ID: '{command.group(3)}'")
         elif command.group(2) == 'u':
           if command.group(3) == 'a' or command.group(3) == 'w' or command.group(3) == 'x':
             save_sheet(log_mode=command.group(3))
@@ -433,15 +503,12 @@ help|h
       elif command.group(1) == 'r' or command.group(1) == 'readers':
         if command.group(4) == 'a':
           if command.group(5) == None:
-            show_help(f"Must specify a message to send to {', '.join(list(map(lambda n: n.ID, nodes)))}")
+            show_help(f"Must specify a message to send to node(s): {', '.join(list(map(lambda n: n.ID, nodes)))}")
           else:
-            multi_call = True
             for n in nodes:
               send_message(f'reader/{n.ID}/status', command.group(5)) # Send current node the command
-            time.sleep(.1) # Prevents on_connect() from saving too many times
-            multi_call = False
-            save_setup_file()
-            save_sheet(log_mode='x')
+            if command.group(5) == 'stop' or command.group(5) == 'read':
+              save_sheet(log_mode='x')
         elif command.group(4) == 'i':
           if not command.group(5) in list(map(lambda n: n.ID, nodes)):
             show_help(f'Could not find reader: {command.group(5)}')
@@ -450,16 +517,19 @@ help|h
               show_help(f"Must specify message to send to: {command.group(5)}")
             else:
               send_message(f'reader/{command.group(5)}/status', command.group(6)) # Send node the command
+              if command.group(6) == 'read' or command.group(6) == 'stop':
+                save_sheet(log_mode='x')
         elif command.group(4) == 'd':
           node_loc = next(n for n in nodes if n.ID == command.group(5))
           loc, stat = command.group(6).split(sep=',')
-          
           if node_loc != None:
             index = nodes.index(node_loc)
             if loc.split(sep=',')[0] != '':
               nodes[index].Location = loc.title()
             if stat.title() == 'Running' or stat.title() == 'Stopped':
               nodes[index].Status = node.Status[stat.title()]
+              save_setup_file()
+              save_sheet(log_mode='x')
             elif stat != '':
               show_help(f"Unrecognized status: '{stat}'. Status must be either 'Running' or 'Stopped'")
           else:
@@ -471,7 +541,7 @@ help|h
           print_spreadsheet()
           print_readers()
           print_rfids()
-          print_logs()
+          print_logs(command.group(3))
         elif command.group(2) == 'r':
           print_rfids()
         elif command.group(2) == 'n':
@@ -479,23 +549,32 @@ help|h
         elif command.group(2) == 's':
           print_spreadsheet()
         elif command.group(2) == 'l':
-          print_logs()
+          print_logs(command.group(3))
         else:
           show_help(f"Unrecognized argument: '{text}'")
       elif command.group(1) == 'h' or command.group(1) == 'help':
         show_help()
       else:
         show_help(f"Unrecognized commmand: '{text}'")
-
-    # Only gets activated when user enters the exit command
-    multi_call = True 
-    disconnect()
-    print_out('closing handler.py')
   
+    save_close()
   # Start the thread
   rc_thread = threading.Thread(target=read_command)
   rc_thread.daemon = True
   rc_thread.start()
+
+def save_close():
+  global asu_running
+  global cr_running
+
+  cr_running = False
+  asu_running = False
+  disconnect()
+  save_setup_file()
+  update_log_file(logs, write_mode='a')
+  save_sheet(log_mode='a')
+  print_out('closed handler.py')
+
 #endregion
 
 if __name__ == '__main__':
@@ -506,6 +585,7 @@ if __name__ == '__main__':
   Catches KeyboardInterrupt to kill the program safely
   '''
   # Login to GSheets service
+  print_out('starting handler.py...')
   creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES) # Generate credentials object from service account file
   service_obj = build('sheets', 'v4', credentials=creds) # Create service object
   print_out('logged into Google OAuth')
@@ -538,6 +618,7 @@ if __name__ == '__main__':
     load_setup_file(rsf_data)
     
   # Create a new thread to handle the automatic sheet updates
+  asu_running = True
   asu_thread = threading.Thread(target=automatic_sheet_update, args=(6,))
   asu_thread.daemon = True
   asu_thread.start()
@@ -546,13 +627,11 @@ if __name__ == '__main__':
   client_obj = mqtt.Client(transport='websockets') # Connect with websockets
   client_obj.on_connect = on_connect
   client_obj.on_message = on_message
-  client_obj.on_subscribe = on_subscribe
   client_obj.connect('broker.hivemq.com', port=8000)
 
   try:
+    cr_running = True
     command_reader() # Start command reading thread
     client_obj.loop_forever() # Automatically handle reconnecting to the MQTT client in case of timeout.
   except KeyboardInterrupt:
-    multi_call = True
-    disconnect()
-    print('ERROR: Data can be corrupted in the Google Sheets spreadsheet.\nClose script using the command "exit" next time.\nUpon reopening the script, run the command "s u -x".')
+    print('\r\nERROR: Data can be corrupted in the Google Sheets spreadsheet.\nClose script using the command "exit" next time.\nUpon reopening the script, run the command "s u -x".')

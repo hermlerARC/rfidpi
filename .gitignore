@@ -1,5 +1,7 @@
 *.json
 *.csv
 *.rsf
+.vscode
 
-RFID-Checkin/Backend Handling/data/
+RFID-Checkin/Backend Handling/data/*
+RFID-Checkin/Backend Handling/test.py
