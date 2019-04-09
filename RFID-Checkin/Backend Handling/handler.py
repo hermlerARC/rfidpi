@@ -45,6 +45,7 @@ client_obj = None
 command_input = True
 command_queue = queue.Queue()
 
+# Replace response_queue with a list and lock combo
 response_queue = queue.Queue(maxsize=1)
 
 asu_running = False
@@ -53,11 +54,18 @@ cr_running = False
 class MQTTResponse(enum.Enum):
   SUCCESSFUL = 0
   FAILED = 1
+
+  def __repr__(self):
+    return self.value
+
+  def __str__(self):
+    return self.name
 #endregion
 
 #region Client Handling
 
-def send_message(topic, msg, timeout = None): 
+def send_message(topic, msg, timeout = None, callback = None, 
+  print_errors = True, callback2 = None, args=()): 
   """
   Posts a single message to the topic, waits for a response, and returns a status code.
 
@@ -65,33 +73,43 @@ def send_message(topic, msg, timeout = None):
     topic: str, the MQTT topic to post the message. Ex: 'reader/12345/active_tag'
     msg: bytes, data that will be posted to the topic.
     timeout: int, seconds to wait a message to be received.
-
-  Returns: MQTTResponse, whether or not the message was received within the timeout
+    callback: function, called with args: MQTTResponse, node, and msg.
+    callback2: function, called after receiving a response.
+    args: tuple, arguments to callback2 is called with.
   """
   global response_queue
 
-  response_code = MQTTResponse.FAILED
+  def print_response(response, node, msg):
+    print_out(f"Received response code {response.value}: {str(response)} after sending '{msg}' to '{node}'")
 
   def run():
     # Send message
+    topic_node = re.search(r'reader\/(.+)\/.+', topic).group(1)
     publish.single(topic, payload=msg, qos=1, hostname="broker.hivemq.com", port=8000, transport="websockets")
-    response = None
-
+    response = {"node": "", "msg" : ""}
+    
     # Receive node response
     try:
       response = response_queue.get(timeout=timeout)
     except queue.Empty:
-      return
+      pass
 
     # Check to see the response matches the message sent
-    if response['topic'] == topic and response['msg'] == msg:
-      response_code = MQTTResponse.SUCCESSFUL
+    if response['node'] == topic_node and response['msg'] == msg:
+      if hasattr(callback, '__call__'): 
+        callback(MQTTResponse.SUCCESSFUL, topic_node, msg)
+    else:
+      if hasattr(callback, '__call__'):
+        callback(MQTTResponse.FAILED, topic_node, msg)
+      if print_errors:
+        print_response(MQTTResponse.FAILED, topic_node, msg)
+
+    if hasattr(callback2, '__call__'):
+      callback2(*args)
 
   run_thread = threading.Thread(target=run)
   run_thread.daemon = True
   run_thread.start()
-
-  return response_code
   
 def on_message(client, data, msg):
   '''
@@ -123,6 +141,7 @@ def on_message(client, data, msg):
 
   global command_input
   global command_queue
+  global response_queue
 
   js = json.loads(str(msg.payload, 'utf-8')) # Deserialize JSON object to Python Object to allow for manipulation
   curr_node = next(n for n in nodes if n.ID == re.search(r'\/(.+)\/', msg.topic).group(1)) # Find out which unit this call came from
@@ -132,18 +151,18 @@ def on_message(client, data, msg):
     if js['MESSAGE'] == 'ping':
       print_out(f'connected to {curr_node.ID}')
     else:
-      print_out(f'sent "{js["MESSAGE"]}" to {curr_node.ID}')
       if js['MESSAGE'] == 'read':
         nodes[nodes.index(curr_node)].Status = node.Status.Running
         save_setup_file()
       elif js['MESSAGE'] == 'stop':
         nodes[nodes.index(curr_node)].Status = node.Status.Stopped
         save_setup_file()
-        
+    
     response_queue.put({
-      'topic' : msg.topic,
+      'node' : curr_node.ID,
       'msg' : js['MESSAGE']
     })
+
   elif topic == 'scanned':
     command_input = False
     print_out(f"scanned tag with EPC: {js['EPC']}")
@@ -174,13 +193,17 @@ def on_message(client, data, msg):
     save_setup_file()
 
 def on_connect(client, data, flags, rc):
+  def ping_node(ind):
+    if (ind < len(nodes)):
+      send_message(f"reader/{nodes[ind].ID}/status", "ping", timeout=1, callback2=ping_node, args=(ind + 1,))
+
   print_out('connecting to nodes...')
   # Connects to every Node
   for n in nodes:
     client.subscribe(f'reader/{n.ID}/active_tag', 1) # Listener for tag reads
     client.subscribe(f'reader/{n.ID}/scanned', 1) # Listener for single scans
     client.subscribe(f'reader/{n.ID}/response', 1) # Listener for response
-    send_message(f"reader/{n.ID}/status", "ping")
+  ping_node(0)
 
 def disconnect():
   '''
@@ -463,6 +486,25 @@ help|h
     print(tabulate(log_vals, headers=['Timestamp', 'Status', 'EPC', 'Owner', 'Description', 'Location', 'Extra'], tablefmt="rst"))
 
   #endregion
+  
+  def save_sheet_wrapper(response, topic, msg):
+    if response == MQTTResponse.SUCCESSFUL:
+      save_sheet(log_mode='x')
+
+  def send_message_wrapper(node_ind, msg, single):
+    read_or_stop = msg == 'read' or msg == 'stop'
+    if (node_ind < len(nodes)):
+      if single:
+        if read_or_stop:
+          send_message(f"reader/{nodes[node_ind].ID}/status", msg, timeout=3, callback=save_sheet_wrapper)
+        else:
+          send_message(f"reader/{nodes[node_ind].ID}/status", msg, timeout=3)
+      else:
+        if read_or_stop:
+          send_message(f"reader/{nodes[node_ind].ID}/status", msg, timeout=3, callback=save_sheet_wrapper, callback2=send_message_wrapper, args=(node_ind + 1, msg, single))
+        else:
+          send_message(f"reader/{nodes[node_ind].ID}/status", msg, timeout=3, callback2=send_message_wrapper, args=(node_ind + 1, msg, single))
+
   def read_command():
     while cr_running:
       text = input() # Gets input from standard input
@@ -505,10 +547,7 @@ help|h
           if command.group(5) == None:
             show_help(f"Must specify a message to send to node(s): {', '.join(list(map(lambda n: n.ID, nodes)))}")
           else:
-            for n in nodes:
-              send_message(f'reader/{n.ID}/status', command.group(5)) # Send current node the command
-            if command.group(5) == 'stop' or command.group(5) == 'read':
-              save_sheet(log_mode='x')
+            send_message_wrapper(0, command.group(5), False)
         elif command.group(4) == 'i':
           if not command.group(5) in list(map(lambda n: n.ID, nodes)):
             show_help(f'Could not find reader: {command.group(5)}')
@@ -516,9 +555,8 @@ help|h
             if command.group(6) == None:
               show_help(f"Must specify message to send to: {command.group(5)}")
             else:
-              send_message(f'reader/{command.group(5)}/status', command.group(6)) # Send node the command
-              if command.group(6) == 'read' or command.group(6) == 'stop':
-                save_sheet(log_mode='x')
+              ind = nodes.index(next(n for n in nodes if n.ID == command.group(5)))
+              send_message_wrapper(ind, command.group(6), True)
         elif command.group(4) == 'd':
           node_loc = next(n for n in nodes if n.ID == command.group(5))
           loc, stat = command.group(6).split(sep=',')
