@@ -15,3 +15,9 @@ class Node:
 
   def __str__(self):
     return f"{self.ID},{self.Location},{str(self.Status)}"
+
+
+ErrorCode = {
+  0x0 : "Attempted to start a node that is already running",
+  0x1 : "Unknown"
+}

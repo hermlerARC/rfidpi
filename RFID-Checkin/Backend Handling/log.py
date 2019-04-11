@@ -23,7 +23,7 @@ def convert_to_log(*args):
   Returns: Log
   """
   if isinstance(args[0], rfidtag.RFIDTag) and isinstance(args[1], datetime.datetime) and isinstance(args[2], node.Node):
-    return Log(args[1], args[1].EPC, args[1].Status, args[1].Owner, args[1].Description, args[2], args[1].Extra)
+    return Log(args[1], args[0].EPC, args[0].Status, args[0].Owner, args[0].Description, args[2], args[0].Extra)
   elif isinstance(args[0], str) and isinstance(args[1], list):
     capture = re.match(r"(?:(?P<timestamp>.+?),)(?:(?P<status>.+?),)(?:(?P<epc>.+?),)(?:(?P<owner>.+?),)(?:(?P<description>.+?),)(?:(?P<location>.+?),)(?:(?P<extra>.+))", args[0])
     

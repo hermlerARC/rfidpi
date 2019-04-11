@@ -21,6 +21,8 @@ import node, log, rfidtag, re, json, pickle, io, datetime, threading, time, queu
 from pathlib import Path
 from tabulate import tabulate
 
+#TODO: Add documenation for most recent commit 
+
 #region Variable Initialization
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets'] # Read and write permissions for program
 SPREADSHEET_ID = '' # Spreadsheet ID for list of ids, names, and clubs
@@ -45,15 +47,16 @@ client_obj = None
 command_input = True
 command_queue = queue.Queue()
 
-# Replace response_queue with a list and lock combo
-response_queue = queue.Queue(maxsize=1)
+node_responses = []
+node_responses_lock = threading.Lock()
 
 asu_running = False
 cr_running = False
 
 class MQTTResponse(enum.Enum):
-  SUCCESSFUL = 0
-  FAILED = 1
+  FAILED = 0
+  SUCCESSFUL = 1
+  ERROR = 2
 
   def __repr__(self):
     return self.value
@@ -64,7 +67,7 @@ class MQTTResponse(enum.Enum):
 
 #region Client Handling
 
-def send_message(topic, msg, timeout = None, callback = None, 
+def send_message(topic, msg, timeout = 15, callback = None, 
   print_errors = True, callback2 = None, args=()): 
   """
   Posts a single message to the topic, waits for a response, and returns a status code.
@@ -77,35 +80,45 @@ def send_message(topic, msg, timeout = None, callback = None,
     callback2: function, called after receiving a response.
     args: tuple, arguments to callback2 is called with.
   """
-  global response_queue
+  global node_responses
+  global node_responses_lock
 
   def print_response(response, node, msg):
     print_out(f"Received response code {response.value}: {str(response)} after sending '{msg}' to '{node}'")
 
   def run():
     # Send message
+    curr_time = datetime.datetime.now()
+
     topic_node = re.search(r'reader\/(.+)\/.+', topic).group(1)
     publish.single(topic, payload=msg, qos=1, hostname="broker.hivemq.com", port=8000, transport="websockets")
-    response = {"node": "", "msg" : ""}
+    response = {"node": topic_node, "msg" : msg}
+    server_response = MQTTResponse.FAILED
     
     # Receive node response
-    try:
-      response = response_queue.get(timeout=timeout)
-    except queue.Empty:
-      pass
+    while (datetime.datetime.now() - curr_time).total_seconds() <= timeout and server_response == MQTTResponse.FAILED:
+        node_responses_lock.acquire()
 
+        if response in node_responses:
+          server_response = MQTTResponse.SUCCESSFUL
+          node_responses.remove(response)
+        
+        node_responses_lock.release()
+    
     # Check to see the response matches the message sent
-    if response['node'] == topic_node and response['msg'] == msg:
-      if hasattr(callback, '__call__'): 
-        callback(MQTTResponse.SUCCESSFUL, topic_node, msg)
-    else:
-      if hasattr(callback, '__call__'):
-        callback(MQTTResponse.FAILED, topic_node, msg)
-      if print_errors:
-        print_response(MQTTResponse.FAILED, topic_node, msg)
-
+    if hasattr(callback, '__call__'):
+      callback(server_response, topic_node, msg)
     if hasattr(callback2, '__call__'):
       callback2(*args)
+    if print_errors and server_response == MQTTResponse.FAILED:
+      print_response(MQTTResponse.FAILED, topic_node, msg)
+
+  if not isinstance(timeout, int):
+    print(f"Invalid argument type timeout: {timeout}")
+    raise ValueError
+  if timeout <= 0:
+    print(f"timeout must be greater than 0")
+    raise ValueError
 
   run_thread = threading.Thread(target=run)
   run_thread.daemon = True
@@ -141,7 +154,8 @@ def on_message(client, data, msg):
 
   global command_input
   global command_queue
-  global response_queue
+  global node_responses
+  global node_responses_lock
 
   js = json.loads(str(msg.payload, 'utf-8')) # Deserialize JSON object to Python Object to allow for manipulation
   curr_node = next(n for n in nodes if n.ID == re.search(r'\/(.+)\/', msg.topic).group(1)) # Find out which unit this call came from
@@ -150,6 +164,8 @@ def on_message(client, data, msg):
   if topic == 'response':
     if js['MESSAGE'] == 'ping':
       print_out(f'connected to {curr_node.ID}')
+    elif js['MESSAGE'] == 'err':
+      print_out(f"{curr_node.ID} error {js['CODE']}: {node.ErrorCode[int(js['CODE'], 16)]}")
     else:
       if js['MESSAGE'] == 'read':
         nodes[nodes.index(curr_node)].Status = node.Status.Running
@@ -158,10 +174,13 @@ def on_message(client, data, msg):
         nodes[nodes.index(curr_node)].Status = node.Status.Stopped
         save_setup_file()
     
-    response_queue.put({
+    node_responses_lock.acquire()
+    node_responses.append({
       'node' : curr_node.ID,
       'msg' : js['MESSAGE']
     })
+
+    node_responses_lock.release()
 
   elif topic == 'scanned':
     command_input = False
@@ -179,25 +198,23 @@ def on_message(client, data, msg):
       
       if curr_tag_index == -1:
         continue
-
       rfid_tags[curr_tag_index].Node = curr_node # Update the tag's current Node
       rfid_tags[curr_tag_index].Status = rfidtag.Status(item['Status']) # Update the tag's status
 
-
       # Create the new log object and add it to the database
-      new_log = log.convert_to_log(rfid_tags[curr_tag_index], datetime.strptime(item['Time'], DATETIME_FORMAT), curr_node)
+      new_log = log.convert_to_log(rfid_tags[curr_tag_index], datetime.datetime.strptime(item['Time'], DATETIME_FORMAT), curr_node)
       logs.append(new_log)
 
-      print('item logged')
+      print('adding log')
       update_log_file(new_log, 'a')
     save_setup_file()
 
 def on_connect(client, data, flags, rc):
   def ping_node(ind):
     if (ind < len(nodes)):
-      send_message(f"reader/{nodes[ind].ID}/status", "ping", timeout=1, callback2=ping_node, args=(ind + 1,))
+      send_message(f"reader/{nodes[ind].ID}/status", "ping", timeout=5, callback2=ping_node, args=(ind + 1,))
 
-  print_out('connecting to nodes...')
+  print_out(f'connecting to nodes: {", ".join(list(map(lambda x: x.ID, nodes)))}')
   # Connects to every Node
   for n in nodes:
     client.subscribe(f'reader/{n.ID}/active_tag', 1) # Listener for tag reads
@@ -205,19 +222,23 @@ def on_connect(client, data, flags, rc):
     client.subscribe(f'reader/{n.ID}/response', 1) # Listener for response
   ping_node(0)
 
-def disconnect():
+def shutdown_nodes():
   '''
   Tells all nodes to stop reading and disconnects the MQTT client.
   '''
   global client_obj
 
-  # Sends every Node a 'stop' message.
-  for n in nodes:
-    send_message(f'reader/{n.ID}/status', b'stop')
+  def close_readers_stopped(rep, n, msg):
+    print_out(f"stopped node: {n}" if rep == MQTTResponse.SUCCESSFUL else f"failed to stop: {n}")
 
-  client_obj.disconnect()
-  
-  print_out('disconnecting client')
+  def close_readers_wrapper(ind):
+    if (ind < len(nodes)):
+      send_message(f'reader/{nodes[ind].ID}/status', 'stop', timeout=5, print_errors=False, callback=close_readers_stopped, callback2=close_readers_wrapper, args=(ind+1,))
+    else:
+      client_obj.disconnect()
+
+  print_out(f'attempting to stop nodes: {", ".join(list(map(lambda x: x.ID, nodes)))}')
+  close_readers_wrapper(0)
 #endregion
 
 #region File Handling
@@ -274,6 +295,9 @@ def save_setup_file():
   '''
   Saves the current nodes and RFID tags into the handler file.
   '''
+  global SPREADSHEET_ID
+  global nodes
+  global rfid_tags
 
   # Creates wrapper of the data generated from the nodes, rfid_tags, and logs lists, pickles, and saves to HANDLER_FILE
   pickle.dump([SPREADSHEET_ID, nodes, rfid_tags], open(HANDLER_FILE, mode='wb'))
@@ -520,7 +544,6 @@ help|h
       
       # Reads commands
       if command.group(1) == 'x' or command.group(1) == 'exit': # Exit command
-        print_out('closing handler.py...')
         break
       elif command.group(1) == 's' or command.group(1) == 'spreadsheet': # Spreadsheet command
         # Handles 'spreadsheet c'
@@ -607,11 +630,7 @@ def save_close():
 
   cr_running = False
   asu_running = False
-  disconnect()
-  save_setup_file()
-  update_log_file(logs, write_mode='a')
-  save_sheet(log_mode='a')
-  print_out('closed handler.py')
+  shutdown_nodes()
 
 #endregion
 
@@ -673,3 +692,8 @@ if __name__ == '__main__':
     client_obj.loop_forever() # Automatically handle reconnecting to the MQTT client in case of timeout.
   except KeyboardInterrupt:
     print('\r\nERROR: Data can be corrupted in the Google Sheets spreadsheet.\nClose script using the command "exit" next time.\nUpon reopening the script, run the command "s u -x".')
+
+  save_setup_file()
+  update_log_file(logs, write_mode='a')
+  save_sheet(log_mode='a')
+  print_out('closed handler.py')

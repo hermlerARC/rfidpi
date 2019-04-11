@@ -2,6 +2,7 @@
 *.csv
 *.rsf
 .vscode
+*.pyc
 
 RFID-Checkin/Backend Handling/data/*
 RFID-Checkin/Backend Handling/test.py
