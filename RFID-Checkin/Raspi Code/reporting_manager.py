@@ -14,17 +14,14 @@ import paho.mqtt.publish as publish
 
 process_running = True
 
-def stop_process():
+def set_process(val):
     global process_running
-    process_running = False
-
-def start_process():
-    global process_running
-    process_running = True
+    process_running = val
 
 def reporting_manager(pipe, raspi_id):
     conn = pipe
     
     while process_running:
         json = conn.recv() # Block thread until tag is scanned
+        print(json)
         publish.single("reader/{}/active_tag".format(raspi_id), json, hostname="broker.hivemq.com", qos=1) # Send tag(s) to topic

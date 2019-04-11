@@ -20,11 +20,14 @@ import reporting_manager, scanning_manager, reading_manager, json, mercury, sens
 
 RASPI_ID = 'UPOGDU' # Unique ID to differentiate between different systems that are connected to the UI Client
 processes = [] # Handles processes that manage RFID tag reading and reporting to MQTT
+running = False
 reader_port = 0
 reader = None
 
+
 sensors.setup()
 print('connected to sensors')
+
 
 # Configure ThingMagic RFID Reader on USB port
 while True:
@@ -34,36 +37,53 @@ while True:
         print('connected to reader on port {}'.format(reader_port))
         break
     except:
-        reader_port += 1
+        reader_port+=1
+        if reader_port < 11:
+            print('attempting to connect to read on port{}'.format(reader_port))
+        else:
+            break
         
+if reader_port > 10:
+    print('could not open reader port')
+    exit()
 
 def client_messaged(client, data, msg):
-    print(str(msg.payload))
     # When 'read' is posted on the topic 'reader/{RASPI_ID}/status'
     # Initialize and start reporting_process and scanning_process
+    
+    global processes
+    global running
+    
     if (msg.payload == b'read'):
-        reporting_conn, scanner_conn1 = Pipe() # Connect two processes by pipe
-        reading_conn, scanner_conn2 = Pipe()
-        
-        reporting_process = Process(target=reporting_manager.reporting_manager, args=(reporting_conn, RASPI_ID))
-        reading_process = Process(target=reading_manager.reading_manager, args=(reading_conn, reader))
-        scanning_process = Process(target=scanning_manager.scanning_manager, args=(scanner_conn1, scanner_conn2))
-        
-        # Daemon exits each process if the main process is killed
-        reporting_process.daemon = True
-        reading_process.daemon = True
-        scanning_process.daemon = True
-        
-        reporting_manager.start_process()
-        reading_manager.start_process()
-        scanning_manager.start_process()
-        
-        reporting_process.start() 
-        reading_process.start()
-        scanning_process.start()
-        
-        processes.extend((reporting_process, reading_process, scanning_process))
+        if not running:
+            reporting_conn, scanner_conn1 = Pipe() # Connect two processes by pipe
+            reading_conn, scanner_conn2 = Pipe()
             
+            reporting_process = Process(target=reporting_manager.reporting_manager, args=(reporting_conn, RASPI_ID))
+            reading_process = Process(target=reading_manager.reading_manager, args=(reading_conn, reader))
+            scanning_process = Process(target=scanning_manager.scanning_manager, args=(scanner_conn1, scanner_conn2))
+            
+            # Daemon exits each process if the main process is killed
+            reporting_process.daemon = True
+            reading_process.daemon = True
+            scanning_process.daemon = True
+            
+            reporting_manager.set_process(True)
+            reading_manager.set_process(True)
+            scanning_manager.set_process(True)
+            scanning_manager.set_testing(True)
+            
+            reporting_process.start() 
+            reading_process.start()
+            scanning_process.start()
+            
+            processes.extend((reporting_process, reading_process, scanning_process))
+            
+            running = True
+        else:
+            print('failed')
+            client.publish('reader/{}/response'.format(RASPI_ID), json.dumps({'MESSAGE': 'err', 'CODE' : '0x0'}), qos=1)
+            return
     # Read for RFID tags and mark as heading 'in'. Publish to MQTT topic 'reader/{RASPI_ID}/active_tag'
     
     elif (msg.payload == b'read_once'):
@@ -74,13 +94,17 @@ def client_messaged(client, data, msg):
     # Kill reporting_process and scanning_process
     
     elif (msg.payload == b'stop'):
-        reporting_manager.stop_process()
-        reading_manager.stop_process()
-        scanning_manager.stop_process()
-        
-        processes[0].terminate()
-        processes[1].terminate()
-        processes[2].terminate()
+        if len(processes) > 0:
+            reporting_manager.set_process(False)
+            reading_manager.set_process(False)
+            scanning_manager.set_process(False)
+            
+            processes[0].terminate()
+            processes[1].terminate()
+            processes[2].terminate()
+            
+            processes = []
+            running = False
             
     # When 'test_sensors' is posted on the topic 'reader/{RASPI_ID}/status'
     # Test sonar sensors
@@ -96,6 +120,9 @@ def client_messaged(client, data, msg):
 
     elif (msg.payload == b'get_data'):
         pass
+    
+    js = json.dumps({'MESSAGE' : str(msg.payload, 'utf-8')})
+    client.publish('reader/{}/response'.format(RASPI_ID), js, qos=1)
       
 def client_subscribed(client, userdata, mid, granted_qos):
     print('connected to client on \'reader/{}/status\''.format(RASPI_ID))
@@ -114,9 +141,9 @@ if __name__ == '__main__':
         client.loop_forever() # Prevents MQTT client from prematurely closing
     except:
         if len(processes) > 0:
-            reporting_manager.stop_process()
-            reading_manager.stop_process()
-            scanning_manager.stop_process()
+            reporting_manager.set_process(False)
+            reading_manager.set_process(False)
+            scanning_manager.set_process(False)
             
             processes[0].terminate()
             processes[1].terminate()

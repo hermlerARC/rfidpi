@@ -16,15 +16,16 @@ THRESHOLD_TIME     = 3 # Max threshold seconds to wait for someone to pass by bo
 THRESHOLD_DISTANCE = 150 # Max distance to read in centimeters before sensors are considered 'tripped'.
 read_status = queue.Queue(maxsize = 1)
 process_running = True
+sensor_testing = False
 
-def stop_process():
+def set_testing(val):
+    global sensor_testing
+    sensor_testing = val
+
+def set_process(val):
     global process_running
-    process_running = False
+    process_running = val
     
-def start_process():
-    global process_running
-    process_running = True
-
 def create_tags(tag_list, status):
     all_tags = []
     
@@ -79,15 +80,18 @@ def scanning_manager(reporting_pipe, read_pipe):
         # Tells reading manager to send a list of tag readings, converts object to JSON, and sends data to reporting manager 
         if activated:
             activated = False 
+            print('heading {}'.format('in' if int(not sensor) else 'out'))
             read_pipe.send([current_time, end_time])
             
             read_response = read_pipe.recv()
             if len(read_response) > 0:
                 reporting_pipe.send(json.dumps(create_tags(read_response, int(not sensor))))
         else:
+            print('unknown direction')
             read_pipe.send([current_time, current_time + datetime.timedelta(seconds=THRESHOLD_TIME)])
             
             read_response = read_pipe.recv()
+            
             if len(read_response) > 0:
                 reporting_pipe.send(json.dumps(create_tags(read_response, 2)))
             

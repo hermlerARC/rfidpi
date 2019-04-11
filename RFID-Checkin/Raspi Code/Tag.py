@@ -13,6 +13,8 @@ Edited on: March 21, 2019
 
 import datetime
 
+DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
+
 class tag:
     def __init__(self, epc, status, rssi):
         self.EPC = epc
@@ -23,7 +25,7 @@ class tag:
     def to_json(self):
         obj = {
             "EPC" : self.EPC,
-            "Time" : str(self.Time.isoformat()),
+            "Time" : str(self.Time.strftime(DATETIME_FORMAT)),
             "Status" : self.Status,
             "RSSI" : self.RSSI
         }

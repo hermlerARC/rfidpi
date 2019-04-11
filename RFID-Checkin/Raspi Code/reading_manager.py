@@ -22,13 +22,9 @@ RUN_READER = True
 
 process_running = True
 
-def stop_process():
+def set_process(val):
     global process_running
-    process_running = False
-    
-def start_process():
-    global process_running
-    process_running = True
+    process_running = val
 
 def run_reader(reader, callback):
     global RUN_READER
