@@ -88,6 +88,7 @@ def client_messaged(client, data, msg):
     
     elif (msg.payload == b'read_once'):
         tag_data = reading_manager.read_once(reader)
+        print(json.dumps(tag_data))
         client.publish('reader/{}/scanned'.format(RASPI_ID), json.dumps(tag_data), qos=1)
             
     # When 'stop' is posted on the topic 'reader/{RASPI_ID}/status'

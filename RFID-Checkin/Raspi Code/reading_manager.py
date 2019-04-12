@@ -12,7 +12,7 @@ To read more about Mercury API for Python go to: https://github.com/gotthardp/py
 Edited on: March 21, 2019
 '''
 
-import threading, datetime, time
+import threading, datetime, time, reporting_manager
 
 lock = threading.Lock() # Blocks thread when accessing tags list
 tags = [] # List that holds tags to send to scanning_manager

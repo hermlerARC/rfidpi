@@ -14,6 +14,9 @@ import paho.mqtt.publish as publish
 
 process_running = True
 
+def send_single(topic, msg):
+    publish.single(topic, msg, hostname="broker.hivemq.com", qos=1) # Send tag(s) to topic
+
 def set_process(val):
     global process_running
     process_running = val
