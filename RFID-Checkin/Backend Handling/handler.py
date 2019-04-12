@@ -37,6 +37,10 @@ SERVICE_ACCOUNT_FILE = 'data/service_account.json'
 
 DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
 
+DEFAULT_MESSAGE_TIMEOUT = float(5) # Default seconds to wait for a node reply
+
+sheet_updates_interval = 6 # Amount of updates per day
+
 nodes = []
 rfid_tags = []
 logs = []
@@ -67,7 +71,7 @@ class MQTTResponse(enum.Enum):
 
 #region Client Handling
 
-def send_message(topic, msg, timeout = 15, callback = None, 
+def send_message(topic, msg, timeout = None, callback = None, 
   print_errors = True, callback2 = None, args=()): 
   """
   Posts a single message to the topic, waits for a response, and returns a status code.
@@ -113,8 +117,10 @@ def send_message(topic, msg, timeout = 15, callback = None,
     if print_errors and server_response == MQTTResponse.FAILED:
       print_response(MQTTResponse.FAILED, topic_node, msg)
 
-  if not isinstance(timeout, int):
-    print(f"Invalid argument type timeout: {timeout}")
+  if timeout == None:
+    timeout = DEFAULT_MESSAGE_TIMEOUT
+  if not isinstance(timeout, float):
+    print(f"Invalid argument type timeout: '{timeout}'. Using default timeout '{DEFAULT_MESSAGE_TIMEOUT}' instead.")
     raise ValueError
   if timeout <= 0:
     print(f"timeout must be greater than 0")
@@ -183,10 +189,21 @@ def on_message(client, data, msg):
     node_responses_lock.release()
 
   elif topic == 'scanned':
+    if js['EPC'] in list(map(lambda x: x.EPC, rfid_tags)):
+      print(f"ERROR: Attempted to reassign an existing tag '{js['EPC']}''")
+      return
+
     command_input = False
     print_out(f"scanned tag with EPC: {js['EPC']}")
     print('Status,Owner,Description,Extra:')
-    data = re.sub(r'(?<=,)(\s)', '', command_queue.get()).split(sep=',') # Gets input from command queue, replaces any excess whitespace, splits by commas
+    response = command_queue.get()
+    
+    if not re.match(r'(.+,){3}\s?([\S]+)', response):
+      print("ERROR: Must have 4 fields seperated by a ',' character.")
+      command_input = True
+      return
+
+    status, owner, description, extra = re.sub(r'(?<=,)(\s)', '', response).split(sep=',') # Gets input from command queue, replaces any excess whitespace, splits by commas
     command_input = True
 
     new_tag = rfidtag.RFIDTag(js['EPC'], rfidtag.Status[data[0].title()], data[1].title(), data[2].title(), curr_node, data[3].title())
@@ -205,14 +222,13 @@ def on_message(client, data, msg):
       new_log = log.convert_to_log(rfid_tags[curr_tag_index], datetime.datetime.strptime(item['Time'], DATETIME_FORMAT), curr_node)
       logs.append(new_log)
 
-      print('adding log')
       update_log_file(new_log, 'a')
     save_setup_file()
 
 def on_connect(client, data, flags, rc):
   def ping_node(ind):
     if (ind < len(nodes)):
-      send_message(f"reader/{nodes[ind].ID}/status", "ping", timeout=5, callback2=ping_node, args=(ind + 1,))
+      send_message(f"reader/{nodes[ind].ID}/status", "ping", timeout=float(2), callback2=ping_node, args=(ind + 1,))
 
   print_out(f'connecting to nodes: {", ".join(list(map(lambda x: x.ID, nodes)))}')
   # Connects to every Node
@@ -233,7 +249,7 @@ def shutdown_nodes():
 
   def close_readers_wrapper(ind):
     if (ind < len(nodes)):
-      send_message(f'reader/{nodes[ind].ID}/status', 'stop', timeout=5, print_errors=False, callback=close_readers_stopped, callback2=close_readers_wrapper, args=(ind+1,))
+      send_message(f'reader/{nodes[ind].ID}/status', 'stop', timeout=float(5), print_errors=False, callback=close_readers_stopped, callback2=close_readers_wrapper, args=(ind+1,))
     else:
       client_obj.disconnect()
 
@@ -242,7 +258,7 @@ def shutdown_nodes():
 #endregion
 
 #region File Handling
-def get_logs(rows):
+def get_logs(rows = None):
   '''
   Retreives a list of logs from the LOGS_FILE with specified rows.
 
@@ -329,8 +345,12 @@ def save_sheet(log_mode = 'a'):
 
   node_vals = list(map(lambda n: [n.ID, n.Location, str(n.Status)], nodes))
   rfid_tag_vals = list(map(lambda r: [r.EPC, str(r.Status), r.Owner, r.Description, r.Node.Location, r.Extra], rfid_tags))
-  log_vals = list(map(lambda l: [l.Timestamp.strftime(DATETIME_FORMAT), str(l.Status), l.EPC, l.Owner, l.Description, l.Node.Location, l.Extra], logs))
 
+  log_vals = []
+  if log_mode == 'a':
+    log_vals = list(map(lambda l: [l.Timestamp.strftime(DATETIME_FORMAT), str(l.Status), l.EPC, l.Owner, l.Description, l.Node.Location, l.Extra], logs))
+  elif log_mode == 'w':
+    log_vals = list(map(lambda l: [l.Timestamp.strftime(DATETIME_FORMAT), str(l.Status), l.EPC, l.Owner, l.Description, l.Node.Location, l.Extra], get_logs()))
   # Tell GSheets that we want to it to post our data by column
   node_resource = {
     "majorDimension": "ROWS",
@@ -349,14 +369,20 @@ def save_sheet(log_mode = 'a'):
 
   # Send GSheets to execute update request with RAW input (meaning GSheets will not perform any 
   # extra formatting on the data. This prevents the program from having to understand multiple formats).
-  service_obj.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=NODES_RANGE, body=node_resource, valueInputOption="RAW").execute()
-  service_obj.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=STATUS_RANGE, body=rfid_tags_resource, valueInputOption="RAW").execute()
-  
-  if (log_mode == 'a'):
-    service_obj.spreadsheets().values().append(spreadsheetId=SPREADSHEET_ID, range=LOGS_RANGE, body=logs_resource, valueInputOption="RAW").execute()
-    logs.clear() # Prevent duplicates being added to the spreadsheet
-  elif (log_mode == 'w'):
-    service_obj.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=LOGS_RANGE, body=logs_resource, valueInputOption="RAW").execute()
+  while True:
+    try:
+      service_obj.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=NODES_RANGE, body=node_resource, valueInputOption="RAW").execute()
+      service_obj.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=STATUS_RANGE, body=rfid_tags_resource, valueInputOption="RAW").execute()
+      
+      if (log_mode == 'a'):
+        service_obj.spreadsheets().values().append(spreadsheetId=SPREADSHEET_ID, range=LOGS_RANGE, body=logs_resource, valueInputOption="RAW").execute()
+        logs.clear() # Prevent duplicates being added to the spreadsheet
+      elif (log_mode == 'w'):
+        service_obj.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range=LOGS_RANGE, body=logs_resource, valueInputOption="RAW").execute()
+      break
+    except ConnectionResetError:
+      print_out('reconnecting to Google API')
+      establish_google_conn()
 
   print_out(f'saved data to {SPREADSHEET_ID} spreadsheet')
 
@@ -416,11 +442,14 @@ def automatic_sheet_update(updates = 6):
     update: int, amount of sheet updates per day.
   '''
   global asu_running
+  global sheet_updates_interval
+
+  sheet_updates_interval = updates
   time_count = 0
    
   print_out('running automatic sheet updates')
   while asu_running:
-    if time_count == (24 / updates) * 3600:
+    if time_count == (24 / sheet_updates_interval) * 3600:
       save_sheet(log_mode='a')
       logs.clear()
       time_count = 0
@@ -440,6 +469,7 @@ def command_reader():
   global command_input
   global command_queue
   global cr_running
+  global sheet_updates_interval
 
   #region Print Commands
   def show_help(err_msg = ""):
@@ -461,7 +491,7 @@ spreadsheet|s [command] -option
         w - Write mode will truncate the current logs and write all current ones.
         x - Doesn't modify the logs sheet at all.
     l - Load spreadsheet and overwrite current readers, tags, and logs.
-readers|r -option [ID|message] [message]
+readers|r -option [ID|message] [message] [timeout=5]
   Description: Accesses readers
   Options:
     a - Accesses all readers. Must specify a message.
@@ -476,6 +506,7 @@ readers|r -option [ID|message] [message]
       stop - Tells readers to stop reading.
       test_sensors - Tells readers to continuously output sonic sensor reads. Only outputs to readers standard output.
       test_reader - Tells readers to continously output RFID tag reads. Only outputs to readers standard output.
+    Timeout: 
 display|d [command] [results]
   Description: Displays data.
   Commands:
@@ -515,19 +546,19 @@ help|h
     if response == MQTTResponse.SUCCESSFUL:
       save_sheet(log_mode='x')
 
-  def send_message_wrapper(node_ind, msg, single):
+  def send_message_wrapper(node_ind, msg, single, timeout=float(5)):
     read_or_stop = msg == 'read' or msg == 'stop'
     if (node_ind < len(nodes)):
       if single:
         if read_or_stop:
-          send_message(f"reader/{nodes[node_ind].ID}/status", msg, timeout=3, callback=save_sheet_wrapper)
+          send_message(f"reader/{nodes[node_ind].ID}/status", msg, timeout=timeout, callback=save_sheet_wrapper)
         else:
-          send_message(f"reader/{nodes[node_ind].ID}/status", msg, timeout=3)
+          send_message(f"reader/{nodes[node_ind].ID}/status", msg, timeout=timeout)
       else:
         if read_or_stop:
-          send_message(f"reader/{nodes[node_ind].ID}/status", msg, timeout=3, callback=save_sheet_wrapper, callback2=send_message_wrapper, args=(node_ind + 1, msg, single))
+          send_message(f"reader/{nodes[node_ind].ID}/status", msg, timeout=timeout, callback=save_sheet_wrapper, callback2=send_message_wrapper, args=(node_ind + 1, msg, single, timeout))
         else:
-          send_message(f"reader/{nodes[node_ind].ID}/status", msg, timeout=3, callback2=send_message_wrapper, args=(node_ind + 1, msg, single))
+          send_message(f"reader/{nodes[node_ind].ID}/status", msg, timeout=timeout, callback2=send_message_wrapper, args=(node_ind + 1, msg, single, timeout))
 
   def read_command():
     while cr_running:
@@ -563,6 +594,11 @@ help|h
             save_setup_file()
             update_log_file(logs, 'w')
             logs.clear()
+        elif command.group(2) == 'i':
+          if command.group(3) and command.group(3).isdigit():
+            sheet_updates_interval = int(command.group(3))
+          else:
+            show_help(f"Must specify an interval speed of type int")
         else:
           show_help(f"Unrecognized argument: {command.group(2)}")
       elif command.group(1) == 'r' or command.group(1) == 'readers':
@@ -570,7 +606,10 @@ help|h
           if command.group(5) == None:
             show_help(f"Must specify a message to send to node(s): {', '.join(list(map(lambda n: n.ID, nodes)))}")
           else:
-            send_message_wrapper(0, command.group(5), False)
+            if command.group(6) and re.match(r'(?:\d+(?:\.(?=\d+))?|\.\d+)', command.group(6)):
+              send_message_wrapper(0, command.group(5), False, timeout=float(command.group(6)))
+            else:
+              send_message_wrapper(0, command.group(5), False)
         elif command.group(4) == 'i':
           if not command.group(5) in list(map(lambda n: n.ID, nodes)):
             show_help(f'Could not find reader: {command.group(5)}')
@@ -578,8 +617,13 @@ help|h
             if command.group(6) == None:
               show_help(f"Must specify message to send to: {command.group(5)}")
             else:
+              packet = command.group(6).split(sep=' ')
               ind = nodes.index(next(n for n in nodes if n.ID == command.group(5)))
-              send_message_wrapper(ind, command.group(6), True)
+              if len(packet) == 2 and re.match(r'(?:\d+(?:\.(?=\d+))?|\.\d+)', packet[1]):
+                send_message_wrapper(ind, packet[0], True, timeout=float(packet[1]))
+              else:
+                send_message_wrapper(ind, packet[0], True)
+              
         elif command.group(4) == 'd':
           node_loc = next(n for n in nodes if n.ID == command.group(5))
           loc, stat = command.group(6).split(sep=',')
@@ -632,6 +676,13 @@ def save_close():
   asu_running = False
   shutdown_nodes()
 
+def establish_google_conn():
+  global creds
+  global service_obj
+
+  creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES) # Generate credentials object from service account file
+  service_obj = build('sheets', 'v4', credentials=creds) # Create service object
+  print_out('connected to Google API')
 #endregion
 
 if __name__ == '__main__':
@@ -643,9 +694,7 @@ if __name__ == '__main__':
   '''
   # Login to GSheets service
   print_out('starting handler.py...')
-  creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES) # Generate credentials object from service account file
-  service_obj = build('sheets', 'v4', credentials=creds) # Create service object
-  print_out('logged into Google OAuth')
+  establish_google_conn()
 
   rsf_data = None
   csv_data = None
