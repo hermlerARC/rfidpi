@@ -13,143 +13,138 @@ To read more about Mercury API for Python go to: https://github.com/gotthardp/py
 Edited on: March 21, 2019
 '''
 
+from paho.mqtt import client as mqtt, publish
 from multiprocessing import Process, Pipe
+from response_codes import ResponseCodes
+from reading_manager import ReadingManager
 import RPi.GPIO as GPIO
-import paho.mqtt.client as mqtt
-import reporting_manager, scanning_manager, reading_manager, json, mercury, sensors
+import repoting_manager, scanning_manager, reading_manager, json, mercury, sensors, datetime
 
-RASPI_ID = 'UPOGDU' # Unique ID to differentiate between different systems that are connected to the UI Client
-processes = [] # Handles processes that manage RFID tag reading and reporting to MQTT
+# Unique ID to differentiate between different systems that are connected to the UI Client
+RASPI_ID = 'UPOGDU'
+processes = []  # Handles processes that manage RFID tag reading and reporting to MQTT
 running = False
-reader_port = 0
-reader = None
 
+LOG_FILE = "System Logs/{}.txt" # {} Are replaced by a datetime value in print_out()
+DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
 
-sensors.setup()
-print('connected to sensors')
+READER_PATH = "tmr:///dev/ttyUSB"
 
+def print_out(msg):
+  """
+  Prints data to the LOG_FILE and out to the screen.
 
-# Configure ThingMagic RFID Reader on USB port
-while True:
+  """
+  curr_time = datetime.datetime.now()
+  ft_msg = "{}\t{}".format(curr_time.strftime(DATETIME_FORMAT), msg)
+
+  print(ft_msg)
+  with open(LOG_FILE.format(curr_time.strftime('%m-%d-%Y')), 'a') as LF:
+    LF.write(ft_msg)
+
+def connect_to_reader(path = READER_PATH, max_port = 10):
+  """
+  Configure ThingMagic RFID Reader.
+
+  Args:
+    max_port: int, attempts to connect to the path[0-max_port]. For example, tmr:///dev/ttyUSB4
+
+  Returns: 
+    [response_codes.Response_Codes, mercury.Reader, str]
+  """
+
+  conn_port = 0
+  reader = None
+
+  while conn_port <= max_port:
     try:
-        reader = mercury.Reader("tmr:///dev/ttyUSB{}".format(reader_port))
-        reader.set_region('NA')
-        print('connected to reader on port {}'.format(reader_port))
-        break
+      reader = mercury.Reader("{}{}".format(path, conn_port))
+      reader.set_region('NA')
+
+      return [ResponseCodes.SUCCESSFUL, reader, "{}{}".format(path, conn_port)]
     except:
-        reader_port+=1
-        if reader_port < 11:
-            print('attempting to connect to read on port{}'.format(reader_port))
-        else:
-            break
-        
-if reader_port > 10:
-    print('could not open reader port')
-    exit()
+      pass
+
+  return [ResponseCodes.READER_CONN_ERR, reader, ""]
 
 def client_messaged(client, data, msg):
-    # When 'read' is posted on the topic 'reader/{RASPI_ID}/status'
-    # Initialize and start reporting_process and scanning_process
-    
-    global processes
-    global running
-    
-    if (msg.payload == b'read'):
-        if not running:
-            reporting_conn, scanner_conn1 = Pipe() # Connect two processes by pipe
-            reading_conn, scanner_conn2 = Pipe()
-            
-            reporting_process = Process(target=reporting_manager.reporting_manager, args=(reporting_conn, RASPI_ID))
-            reading_process = Process(target=reading_manager.reading_manager, args=(reading_conn, reader))
-            scanning_process = Process(target=scanning_manager.scanning_manager, args=(scanner_conn1, scanner_conn2))
-            
-            # Daemon exits each process if the main process is killed
-            reporting_process.daemon = True
-            reading_process.daemon = True
-            scanning_process.daemon = True
-            
-            reporting_manager.set_process(True)
-            reading_manager.set_process(True)
-            scanning_manager.set_process(True)
-            scanning_manager.set_testing(True)
-            
-            reporting_process.start() 
-            reading_process.start()
-            scanning_process.start()
-            
-            processes.extend((reporting_process, reading_process, scanning_process))
-            
-            running = True
-        else:
-            print('failed')
-            client.publish('reader/{}/response'.format(RASPI_ID), json.dumps({'MESSAGE': 'err', 'CODE' : '0x0'}), qos=1)
-            return
-    # Read for RFID tags and mark as heading 'in'. Publish to MQTT topic 'reader/{RASPI_ID}/active_tag'
-    
-    elif (msg.payload == b'read_once'):
-        tag_data = reading_manager.read_once(reader)
-        print(json.dumps(tag_data))
-        client.publish('reader/{}/scanned'.format(RASPI_ID), json.dumps(tag_data), qos=1)
-            
-    # When 'stop' is posted on the topic 'reader/{RASPI_ID}/status'
-    # Kill reporting_process and scanning_process
-    
-    elif (msg.payload == b'stop'):
-        if len(processes) > 0:
-            reporting_manager.set_process(False)
-            reading_manager.set_process(False)
-            scanning_manager.set_process(False)
-            
-            processes[0].terminate()
-            processes[1].terminate()
-            processes[2].terminate()
-            
-            processes = []
-            running = False
-            
-    # When 'test_sensors' is posted on the topic 'reader/{RASPI_ID}/status'
-    # Test sonar sensors
-    elif (msg.payload == b'test_sensors'):
-        print('Beginning test... press control+c to stop')
-        sensors.test_sensors(300)
-            
-    # When 'test_reader' is posted on the topic 'reader/{RASPI_ID}/status'
-    # Test RFID reader
-    elif (msg.payload == b'test_reader'):
-        print('Beginning test... press control+c to stop')
-        reading_manager.test_reader(reader)
+  # Response Message
+  js = json.dumps({
+    'NODE' : RASPI_ID,
+    'MESSAGE' : str(msg.payload, 'utf-8'),
+    'CODE' : '0x0'
+  })
 
-    elif (msg.payload == b'get_data'):
-        pass
-    
-    js = json.dumps({'MESSAGE' : str(msg.payload, 'utf-8')})
-    client.publish('reader/{}/response'.format(RASPI_ID), js, qos=1)
-      
-def client_subscribed(client, userdata, mid, granted_qos):
-    print('connected to client on \'reader/{}/status\''.format(RASPI_ID))
+  if (msg.payload == b'read'):
+    reading_man.BeginReading()
+  # Read for RFID tags and mark as heading 'in'. Publish to MQTT topic 'reader/{RASPI_ID}/active_tag'
+
+  elif (msg.payload == b'read_once'):
+    js = json.dumps(reading_man.ReadOnce())
+    client.publish('reader/{}/scanned'.format(RASPI_ID), json.dumps(tag_data), qos=1)
+
+  # When 'stop' is posted on the topic 'reader/{RASPI_ID}/status'
+  # Kill reporting_process and scanning_process
+
+  elif (msg.payload == b'stop'):
+    reading_man.StopReading()
+
+  # When 'test_sensors' is posted on the topic 'reader/{RASPI_ID}/status'
+  # Test sonar sensors
+  elif (msg.payload == b'test_sensors'):
+    print('Beginning test... press control+c to stop')
+    sensors.test_sensors(300)
+
+  # When 'test_reader' is posted on the topic 'reader/{RASPI_ID}/status'
+  # Test RFID reader
+  elif (msg.payload == b'test_reader'):
+    print('Beginning test... press control+c to stop')
+    reading_manager.test_reader(reader)
+
+  elif (msg.payload == b'get_data'):
+    pass
+
+  js = json.dumps({'MESSAGE': str(msg.payload, 'utf-8')})
+  client.publish('reader/{}/response'.format(RASPI_ID), js, qos=1)
 
 def client_connected(client, data, flags, rc):
-    client.subscribe('reader/{}/status'.format(RASPI_ID), 1) # Setup client to receive messages posted on 'reader/{RASPI_ID}/status' topic
+  # Setup client to receive messages posted on 'reader/{RASPI_ID}/status' topic
+  client.subscribe('reader/{}/status'.format(RASPI_ID), 1)
+  print_out("listening for commands on 'reader/{}/status'".format(RASPI_ID))
 
 if __name__ == '__main__':
-    client = mqtt.Client(transport='websockets') # Connect with websockets
-    client.on_subscribed = client_subscribed
-    client.on_connect = client_connected
-    client.on_message = client_messaged
-    client.connect('broker.hivemq.com', port=8000)
+  # Attempt to setup sensors
+  sensor_response = sensors.setup()
 
-    try:
-        client.loop_forever() # Prevents MQTT client from prematurely closing
-    except:
-        if len(processes) > 0:
-            reporting_manager.set_process(False)
-            reading_manager.set_process(False)
-            scanning_manager.set_process(False)
-            
-            processes[0].terminate()
-            processes[1].terminate()
-            processes[2].terminate()
-        
-        GPIO.cleanup()
-        
-        print('closing')
+  if sensor_response == ResponseCodes.SUCCESSFUL:
+    print_out('connected to sensors')
+  else:
+    print_out(str(sensor_response))
+    exit(1)
+
+  # Attempt to connect to reader
+  reader_response, reader, conn_path = connect_to_reader()
+  if reader_response == ResponseCodes.SUCCESSFUL:
+    print_out("connected to reader on '{}'".format(conn_path))
+  else:
+    print_out(str(reader_response))
+    exit(1)
+
+  reading_man = ReadingManager(reader)
+
+  # Attempt to connect to MQTT
+  client = mqtt.Client(transport='websockets')  # Connect with websockets
+  client.on_connect = client_connected
+  client.on_message = client_messaged
+  client.connect('broker.hivemq.com', port=8000)
+
+  try:
+    client.loop_forever() # Handles reconnecting to MQTT server upon timeout automatically
+  except:
+    # Close all processes
+    for process in processes:
+      process.terminate()
+
+    GPIO.cleanup() # Frees up ownership of GPIO pins
+    del reader # Disconnects the reader
+    print_out("closing read.py")

@@ -14,31 +14,107 @@ Edited on: March 21, 2019
 '''
 
 import RPi.GPIO as GPIO
-import time, datetime, threading
+import time, threading, enum, read
+from response_codes import ResponseCodes
 
-thread_counter = 0
-active_threads = []
-IN_PINS = [18,23]
-OUT_PINS = [25,24]
-READ_SPEED = 1 # Reads per second
+class SensorType(enum.Enum):
+  In_Sensor = 0
+  Out_Sensor = 1
 
-def get_sensor_value(sensor):
-    # Read from either IN_PINS or OUT_PINS
-    pins = IN_PINS if sensor == 0 else OUT_PINS
-    
+  def __str__(self):
+    return self.name
+
+class SensorStatus(enum.Enum):
+  Running = 0
+  Paused = 1
+  Stopped = 2
+
+class Sensor:
+  def __init__(self, sensor_type):
+    IN_PINS = [18,23]
+    OUT_PINS = [25,24]
+
+    self.__sensor_type = sensor_type
+    self.__status = SensorStatus.Stopped
+    self.__pins = IN_PINS if self.__sensor_type == SensorType.In_Sensor else OUT_PINS
+
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(self.__pins[0], GPIO.OUT)
+    GPIO.setup(self.__pins[1], GPIO.IN)
+
+  def BeginReading(self, read_speed = 1, callback = None):
+    if self.__status == SensorStatus.Running:
+      return ResponseCodes.SENSOR_RUNNING
+    elif self.__status == SensorStatus.Paused:
+      return ResponseCodes.SENSOR_PAUSED
+
+    if isinstance(read_speed, int) and read_speed > 0:
+      self.__read_speed = read_speed
+      
+      self.__reading_callback = callback
+      self.__status = SensorStatus.Running
+      
+      run_thread = threading.Thread(target=self.__run)
+      run_thread.start()
+
+      return ResponseCodes.SENSOR_RUNNING
+    else:
+      print("Invalid read_speed argument: {}".format(read_speed))
+      raise ValueError
+
+  def StopReading(self):
+    if self.__status == SensorStatus.Stopped:
+      return ResponseCodes.SENSOR_STOPPED
+    elif self.__status == SensorStatus.Stopped or self.__status == SensorStatus.Paused:
+      self.__status = SensorStatus.Stopped
+      return ResponseCodes.SENSOR_STOPPED
+
+  def PauseReading(self):
+    if self.__status == SensorStatus.Paused:
+      return ResponseCodes.SENSOR_PAUSED
+    elif self.__status == SensorStatus.Running:
+      self.__status = SensorStatus.Paused
+      return ResponseCodes.SENSOR_PAUSED
+    elif self.__status == SensorStatus.Stopped:
+      return ResponseCodes.SENSOR_STOPPED
+
+  def ContinueReading(self):
+    if self.__status == SensorStatus.Paused:
+      self.__status = SensorStatus.Running
+      return ResponseCodes.SENSOR_RUNNING
+    elif self.__status == SensorStatus.Running:
+      return ResponseCodes.SENSOR_RUNNING
+    elif self.__status == SensorStatus.Stopped:
+      return ResponseCodes.SENSOR_STOPPED
+
+  def Status(self):
+    return self.__running
+
+  def __run(self, callback):
+    while True:
+      if self.__running == SensorStatus.Running:
+        if hasattr(self.__reading_callback, '__call__'):
+          callback(self.__sensor_type, self.__get_sensor_value())
+          time.sleep(1/ self.__read_speed)
+      elif self.__running == SensorStatus.Paused:
+        continue
+      elif self.__running == SensorStatus.Stopped:
+        break
+
+  def __get_sensor_value(self):
     # Set 'Trigger' pin to HIGH
-    GPIO.output(pins[0], True)
+    GPIO.output(self.__pins[0], True)
     # Set 'Trigger' pin after 0.01ms to LOW
     time.sleep(0.00001)
-    GPIO.output(pins[0], False)
+    GPIO.output(self.__pins[0], False)
     
     start_time = time.time()
     stop_time = time.time()
     # Save start_time
-    while GPIO.input(pins[1]) == 0:
+    while GPIO.input(self.__pins[1]) == 0:
         start_time = time.time()
     # Save time of arrival
-    while GPIO.input(pins[1]) == 1:
+    while GPIO.input(self.__pins[1]) == 1:
         stop_time = time.time()
     # Time between start_time and time of arrival
     time_elapsed = stop_time - start_time
@@ -46,88 +122,3 @@ def get_sensor_value(sensor):
     distance = time_elapsed * 17150
 
     return distance
-    
-
-def setup():
-    GPIO.setmode(GPIO.BCM)
-
-    # Set GPIO directions (IN / OUT)
-    GPIO.setup(IN_PINS[0], GPIO.OUT)
-    GPIO.setup(OUT_PINS[0], GPIO.OUT)
-    
-    GPIO.setup(IN_PINS[1], GPIO.IN)
-    GPIO.setup(OUT_PINS[1], GPIO.IN)
-    
-def begin_reading(sensor, callback, read_speed = 0):
-    """
-    Creates a new thread to run a reader and calls the callback function everytime it gets a read
-    
-    Keyword arguments:
-        sensor -- Either '0' or '1' for in or out reader, respectively
-        callback -- Function that should have 2 parameters. Calls the function with the id and reading of the sensor.
-    """
-    global READ_SPEED
-    global active_threads
-    global thread_counter
-    
-    if not read_speed == 0:
-        READ_SPEED = read_speed
-    
-    def read_sensors(sensor, callback, thread_count):
-        while True:
-            if active_threads[thread_count] == 0: # Pause
-                pass
-            elif active_threads[thread_count] == 1: # Run
-                callback(sensor, get_sensor_value(sensor))
-                time.sleep(1/READ_SPEED)
-            elif active_threads[thread_count] == 2: # Exit
-                break
-    
-    
-    active_threads.append(1) # Add the 'run' status to the active_threads list
-    threading.Thread(target=read_sensors, args=(sensor, callback, thread_counter)).start()
-    thread_counter += 1
-    return thread_counter - 1
-
-
-def set_read_status(thread_count, status):
-    """
-    Tell a sensor to pause, resume, or stop.
-    
-    Keyword arguments:
-        thread_count -- the ID associated with the thread the sensor reads on
-        status -- 0 for pause, 1 for resume, 2 for stop
-    """
-    
-    global active_threads
-    active_threads[thread_count] = status
-
-
-def test_sensors(threshold = 100, read_speed = 0):
-    """
-    Prints out sensor reading every 1/READ_SPEED seconds. Stops reading with input from keyboard.
-    
-    Keyword arguments:
-        threshold -- Max distance in cm that the sonic readers reports. Default is 100 cm.
-    """
-    
-    global READ_SPEED
-    
-    if not read_speed == 0:
-        READ_SPEED = read_speed
-    
-    # Function that prints out to the standard output a line formatted as "{Time}  {Sensor}  {Read value}"
-    def print_reading(sensor, reading):
-        if reading < threshold:
-            t = str(datetime.datetime.now().isoformat())
-            print ("{}\t{}\t{}".format(t, 'in' if sensor == 1 else 'out', reading))
-    
-    in_thread  = begin_reading(0, print_reading)
-    out_thread = begin_reading(1, print_reading)       
-
-    input()
-
-    set_read_status(in_thread, 2)
-    set_read_status(out_thread, 2)
-    print('Stopped tests.')
-
