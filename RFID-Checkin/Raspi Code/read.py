@@ -13,27 +13,36 @@ To read more about Mercury API for Python go to: https://github.com/gotthardp/py
 Edited on: March 21, 2019
 '''
 
+
+#TODO: Rework handler.py to support new node topics and commands
+#TODO: Check logic of finding direction of tag inside of ReadingsContainer
+
 from paho.mqtt import client as mqtt, publish
-from multiprocessing import Process, Pipe
 from response_codes import ResponseCodes
 from reading_manager import ReadingManager
-import RPi.GPIO as GPIO
-import repoting_manager, scanning_manager, reading_manager, json, mercury, sensors, datetime
+from sensors import SensorManager
+import json, mercury, datetime, enum
 
 # Unique ID to differentiate between different systems that are connected to the UI Client
 RASPI_ID = 'UPOGDU'
-processes = []  # Handles processes that manage RFID tag reading and reporting to MQTT
-running = False
-
 LOG_FILE = "System Logs/{}.txt" # {} Are replaced by a datetime value in print_out()
 DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
 
 READER_PATH = "tmr:///dev/ttyUSB"
 
+class NodeTopic(enum.Enum):
+  COMMANDS = "command"
+  NODE_STATUS = "status"
+  NODE_RESPONSE = "response"
+  TAG_READINGS = "tag"
+  SENSOR_READINGS = "sensor"
+
+  def __str__(self):
+    return self.value
+
 def print_out(msg):
   """
   Prints data to the LOG_FILE and out to the screen.
-
   """
   curr_time = datetime.datetime.now()
   ft_msg = "{}\t{}".format(curr_time.strftime(DATETIME_FORMAT), msg)
@@ -67,61 +76,74 @@ def connect_to_reader(path = READER_PATH, max_port = 10):
 
   return [ResponseCodes.READER_CONN_ERR, reader, ""]
 
-def client_messaged(client, data, msg):
-  # Response Message
-  js = json.dumps({
-    'NODE' : RASPI_ID,
-    'MESSAGE' : str(msg.payload, 'utf-8'),
-    'CODE' : '0x0'
-  })
+def send_message(client, topic, msg, code):
+  if isinstance(client, mqtt.Client) and isinstance(topic, NodeTopic):
+    message_object = {
+      'NODE' : RASPI_ID,
+      'BODY' : msg,
+      'RESPONSE_CODE' : ""
+    }
 
-  if (msg.payload == b'read'):
-    reading_man.BeginReading()
-  # Read for RFID tags and mark as heading 'in'. Publish to MQTT topic 'reader/{RASPI_ID}/active_tag'
+    if isinstance(code, ResponseCodes):
+      message_object['RESPONSE_CODE'] = code.name
+    elif isinstance(code, int):
+      message_object['RESPONSE_CODE'] = code
+  
+    client.publish('reader/{}/{}'.format(RASPI_ID, topic), json.dumps(message_object), qos=1)
+    return ResponseCodes.MESSAGE_SENT
+  else:
+    print('topic argument must be an instance of a NodeTopic')
+    raise ValueError
+    return ResponseCodes.MESSAGE_NOT_SENT
+
+def client_messaged(client, data, msg):
+  print_out('received message {}'.format(str(msg, 'utf-8')))
+
+  def log_tag(tag):
+    send_message(client, NodeTopic.TAG_READINGS, tag.to_object(), ResponseCodes.TAG_SCANNED)
+
+  def log_sensor_reading(sensor_reading):
+    send_message(client, NodeTopic.SENSOR_READINGS, sensor_reading.to_object(), ResponseCodes.SENSOR_READ)
+
+  if (msg.payload == b'start_logging'):
+    send_message(client, NodeTopic.NODE_STATUS, '', reading_man.BeginReading(callback=log_tag))
+    print_out('starting reading manager...')
+
+  elif (msg.payload == b'stop_logging'):
+    send_message(client, NodeTopic.NODE_STATUS, '', reading_man.StopReading())
+    print_out('stopping reading manager')
 
   elif (msg.payload == b'read_once'):
-    js = json.dumps(reading_man.ReadOnce())
-    client.publish('reader/{}/scanned'.format(RASPI_ID), json.dumps(tag_data), qos=1)
+    tag = reading_man.ReadOnce()
+    print_out("read tag with EPC: {}".format(tag.epc))
+    log_tag(tag)
 
-  # When 'stop' is posted on the topic 'reader/{RASPI_ID}/status'
-  # Kill reporting_process and scanning_process
+  elif (msg.payload == b'begin_sensor_test'):
+    print_out('beginning sensor test...')
+    sensor_man.RunSensors(callback=log_sensor_reading)
 
-  elif (msg.payload == b'stop'):
+  elif (msg.payload == b'stop_sensor_test'):
+    sensor_man.StopSensors()
+    print_out('stopping sensor test...')
+
+  elif (msg.payload == b'begin_reader_test'):
+    print_out('beginning reader test...')
+    reading_man.BeginReading(callback=log_tag, testing=True)
+
+  elif (msg.payload == b'stop_reader_test'):
     reading_man.StopReading()
+    print_out('stopping reader test...')
 
-  # When 'test_sensors' is posted on the topic 'reader/{RASPI_ID}/status'
-  # Test sonar sensors
-  elif (msg.payload == b'test_sensors'):
-    print('Beginning test... press control+c to stop')
-    sensors.test_sensors(300)
+  elif (msg.payload == b'check_status'):
+    send_message(client, NodeTopic.NODE_STATUS, "", reading_man.IsRunning())
 
-  # When 'test_reader' is posted on the topic 'reader/{RASPI_ID}/status'
-  # Test RFID reader
-  elif (msg.payload == b'test_reader'):
-    print('Beginning test... press control+c to stop')
-    reading_manager.test_reader(reader)
-
-  elif (msg.payload == b'get_data'):
-    pass
-
-  js = json.dumps({'MESSAGE': str(msg.payload, 'utf-8')})
-  client.publish('reader/{}/response'.format(RASPI_ID), js, qos=1)
+  send_message(client, NodeTopic.NODE_RESPONSE, str(msg.payload, 'utf-8'), ResponseCodes.MESSAGE_RECEIVED)
 
 def client_connected(client, data, flags, rc):
-  # Setup client to receive messages posted on 'reader/{RASPI_ID}/status' topic
-  client.subscribe('reader/{}/status'.format(RASPI_ID), 1)
-  print_out("listening for commands on 'reader/{}/status'".format(RASPI_ID))
+  client.subscribe('reader/{}/{}'.format(RASPI_ID, NodeTopic.COMMANDS), 1)
+  print_out("listening for commands on 'reader/{}/{}'".format(RASPI_ID, NodeTopic.COMMANDS))
 
 if __name__ == '__main__':
-  # Attempt to setup sensors
-  sensor_response = sensors.setup()
-
-  if sensor_response == ResponseCodes.SUCCESSFUL:
-    print_out('connected to sensors')
-  else:
-    print_out(str(sensor_response))
-    exit(1)
-
   # Attempt to connect to reader
   reader_response, reader, conn_path = connect_to_reader()
   if reader_response == ResponseCodes.SUCCESSFUL:
@@ -130,7 +152,8 @@ if __name__ == '__main__':
     print_out(str(reader_response))
     exit(1)
 
-  reading_man = ReadingManager(reader)
+  sensor_man = SensorManager()
+  reading_man = ReadingManager(reader, sensor_man)
 
   # Attempt to connect to MQTT
   client = mqtt.Client(transport='websockets')  # Connect with websockets
@@ -141,10 +164,7 @@ if __name__ == '__main__':
   try:
     client.loop_forever() # Handles reconnecting to MQTT server upon timeout automatically
   except:
-    # Close all processes
-    for process in processes:
-      process.terminate()
+    reading_man.StopReading()
+    sensor_man.StopSensors()
 
-    GPIO.cleanup() # Frees up ownership of GPIO pins
-    del reader # Disconnects the reader
     print_out("closing read.py")

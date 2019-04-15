@@ -12,126 +12,158 @@ To read more about Mercury API for Python go to: https://github.com/gotthardp/py
 Edited on: March 21, 2019
 '''
 
-import threading, datetime, time
+import threading, datetime, Tag
 from sensors import *
-from paho.mqtt import publish
-import Tag
 
-def reading_manager(pipe, reader):
+class ReadingsContainer:
+  def __init__(self, timeout):
+    self.Timeout = timeout
 
-  global tags
-  global TIME_THRESHOLD
-  global process_running
-  global RUN_READER
-  
-  read(reader)
-  
-  while process_running:
-      '''
-      Wait for a read signal from the scanning manager.
-      Message will give the time range of the tripped sensors.
-      Increase the range by TIME_THRESHOLD.
-      '''
-      times = pipe.recv()
-      times = [times[0] - datetime.timedelta(seconds=TIME_THRESHOLD/2), times[1] + datetime.timedelta(seconds=TIME_THRESHOLD/2)]
-      adjusted_tags = []
+    self.InReads = []
+    self.OutReads = []
+    self.Directions = []
 
-      lock.acquire()
-      if len(tags) > 0:  
-          ranged_tags = list(filter(lambda x: x[2] > times[0] and x[2] < times[1], tags)) # Get all tags within the time range
-          
-          lock.release()
-            
-          # Discard any duplicate tag reads.
-          for x in ranged_tags:
-            if x[0] not in list(map(lambda y: y[0], adjusted_tags)):
-              adjusted_tags.append(x)
+  def AddReading(self, sensor_reading):
+    self.__clear_garbage_reads()
+
+    if sensor_reading.SensorType == SensorType.In:
+      if len(self.OutReads) > 0:
+        self.Directions.append(Direction(TimeRange(self.OutReads[0].Timestamp, sensor_reading.Timestamp), Tag.TagStatus.In))
+        self.OutReads.clear()
       else:
-          lock.release()
-          
-      pipe.send(adjusted_tags) # Release tags back over the pipe
-      
-  RUN_READER = False # Stops reading thread
+        self.InReads.append(sensor_reading)
+    elif sensor_reading.SensorType == SensorType.Out:
+      if len(self.InReads) > 0:
+        self.Directions.append(Direction(TimeRange(self.InReads[0].Timestamp, sensor_reading.Timestamp), Tag.TagStatus.Out))
+        self.InReads.clear()
+      else:
+        self.OutReads.append(sensor_reading)
+
+  def Clear(self):
+    self.InReads.clear()
+    self.OutReads.clear()
+    self.Directions.clear()
+
+  def __clear_garbage_reads(self):
+    for sensor_reading in self.InReads:
+      if (datetime.datetime.now() - sensor_reading.Timestamp).total_seconds() > self.Timeout:
+        self.InReads.remove(sensor_reading)
+
+    for sensor_reading in self.OutReads:
+      if (datetime.datetime.now() - sensor_reading.Timestamp).total_seconds() > self.Timeout:
+        self.OutReads.remove(sensor_reading)
+
+    for direction in self.Directions:
+      if (datetime.datetime.now() - direction.TimeRange.EndTime).total_seconds() > self.Timeout:
+        self.Directions.remove(direction)
+
+class Direction:
+  def __init__(self, time_range, direction):
+    self.TimeRange = time_range
+    self.Direction = direction
+
+class TimeRange:
+  def __init__(self, start_time, end_time):
+    if isinstance(start_time, datetime.datetime) and isinstance(end_time, datetime.datetime):
+      self.StartTime = start_time
+      self.EndTime = end_time
+    else:
+      print('start_time and end_time must be an instance of datetime')
+      raise ValueError
+
+  def Contains(self, test_time):
+    if isinstance(test_time, datetime):
+      return self.StartTime <= test_time and test_time <= self.EndTime
+    elif isinstance(test_time, TimeRange):
+      return self.StartTime <= test_time.StartTime and test_time.EndTime <= self.EndTime
 
 class ReadingManager():
-  def __init__(self, reader, threshold_distace = 150, threshold_time = 3):
+  def __init__(self, reader, sensor_manager):
+    self.__THRESHOLD_TIME = 3
+
     self.__reader = reader
 
-    if not isinstance(threshold_distace, int) or threshold_distace < 1:
-      print("Invalid threshold_distance argument: {}".format(threshold_distace))
-      raise ValueError
-    if not isinstance(threshold_time, int) or threshold_time < 1:
-      print("Invalid threshold_time argument: {}".format(threshold_time))
-      raise ValueError
-
-    self.__threshold_distance = threshold_distace
-    self.__threshold_time = threshold_time
-
-    self.__sensor_readings = []
-    self.__sensor_readings_lock = threading.Lock()
+    self.__sensor_manager = sensor_manager
+    self.__readings_container = ReadingsContainer(self.__THRESHOLD_TIME)
+    self.__readings_container_lock = threading.Lock()
     
     self.__running = False
 
-  def BeginReading(self, testing_callback = None, testing_threshold = 300):
+  def BeginReading(self, callback = None, sensor_threshold = 300, testing = False):
+    def __log_tag(tag_data):
+      curr_time = datetime.datetime.now()
+      direction = self.__get_direction(curr_time) if testing else Tag.TagStatus.Unknown
+      
+      tag = Tag.Tag(tag_data.epc, direction, tag_data.rssi)
+      callback(tag)
+
     if self.__running:
-      return ResponseCodes.READER_RUNNING
+      print('This instance of ReadingManager is already running')
+      raise RuntimeError
 
     self.__running = True
 
-    if hasattr(testing_callback, '__call__') and isinstance(testing_callback, int) and testing_callback > 0:
-      self.__reader.start_reading(testing_callback)
-    else:
-      self.__run_scanners()
-      self.__reader.start_reading(self.__log_tag)
+    if hasattr(callback, '__call__'):
+      if isinstance(sensor_threshold, int) and sensor_threshold > 0:
+        self.__sensor_threshold = sensor_threshold
 
-    return ResponseCodes.READER_RUNNING
+        self.__run_sensors()
+        self.__reader.start_reading(__log_tag)
+
+        return ResponseCodes.NODE_RUNNING
+      else:
+        print("Sensor threshold must be an int that's greater than 0")
+        raise ValueError
+        return ResponseCodes.NODE_STOPPED
+    else:
+      print('Must specify callback function')
+      raise ValueError
+      return ResponseCodes.NODE_STOPPED
+
 
   def StopReading(self):
     if not self.__running:
-      return ResponseCodes.READER_STOPPED
+      return ResponseCodes.NODE_STOPPED
     
     self.__running = False
-    self.__in_sensor.StopReading()
-    self.__out_sensor.StopReading()
-    self.__sensor_readings.clear()
+    self.__sensor_manager.StopSensors()
+    self.__readings_container.Clear()
     self.__reader.stop_reading()
 
-  def ReadOnce(self):
-    tag_data = self.__reader.read()[0]
-    return {
-      'EPC' : str(tag_data.epc, 'utf-8')
-    }
+    return ResponseCodes.NODE_STOPPED
 
-  def __log_tag(self, tag_data):
-    curr_time = datetime.datetime.now()
-    epc = str(tag_data,epc, 'utf-8')
-    direction = self.__get_direction(curr_time)
-    
-    tag = Tag.Tag(epc, direction, tag_data.rssi)    
-    client.publish('reader/{}/reading'.format(RASPI_ID), json.dumps(tag.to_json()), qos=1)
+  def ReadOnce(self):
+    if self.__running:
+      print('Cannot read while this instance of Reading Manager is active')
+      raise RuntimeError
+
+    tag_data = self.__reader.read()[0]
+    tag = Tag.Tag(str(tag_data.epc, 'utf-8'), Tag.TagStatus.Unknown, tag_data.rssi)
+
+    return tag
+
+  def IsRunning(self):
+    return ResponseCodes.NODE_RUNNING if self.__running else ResponseCodes.NODE_STOPPED
 
   def __get_direction(self, ctime):
-    self.__sensor_readings_lock.acquire()
+    self.__readings_container_lock.acquire()
+    
+    tag_status = Tag.TagStatus.Unknown
 
-    while True and len(self.__sensor_readings) > 0:
-      first_reading = self.__sensor_readings.pop()
-      if (datetime.datetime.now() - curr_reading['Timestamp']).total_seconds() < self.__threshold_time:
-        pass
+    for direction in self.__readings_container.Directions:
+      if (direction.TimeRange.Contains(ctime)):
+        tag_status = direction.Direction
+        break
+    
+    self.__readings_container_lock.release()
+    
+    return tag_status
 
-  def __run_scanners(self):
-    def receive_reading(sensor_type, value):
-      if value <= self.__threshold_distance:
+  def __run_sensors(self):
+    def receive_reading(sensor_reading):
+      if value <= self.__sensor_threshold:
         self.__sensor_readings_lock.acquire()
-
-        self.__sensor_readings.push({
-          "Timestamp" : datetime.datetime.now(),
-          "Sensor" : sensor_type
-        })
-
+        self.__readings_container.AddReading(sensor_reading)
         self.__sensor_readings_lock.release()
 
-    self.__in_sensor = Sensor(SensorType.In_Sensor)
-    self.__out_sensor = Sensor(SensorType.Out_Sensor)
-    
-    self.__in_sensor.BeginReading(callback=receive_reading)
-    self.__out_sensor.BeginReading(callback=receive_reading)
+    self.__sensor_manager.RunSensors(callback=receive_reading)
