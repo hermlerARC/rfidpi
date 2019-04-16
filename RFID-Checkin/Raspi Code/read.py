@@ -15,7 +15,6 @@ Edited on: March 21, 2019
 
 
 #TODO: Rework handler.py to support new node topics and commands
-#TODO: Check logic of finding direction of tag inside of ReadingsContainer
 
 from paho.mqtt import client as mqtt, publish
 from response_codes import ResponseCodes
@@ -79,13 +78,12 @@ def connect_to_reader(path = READER_PATH, max_port = 10):
 def send_message(client, topic, msg, code):
   if isinstance(client, mqtt.Client) and isinstance(topic, NodeTopic):
     message_object = {
-      'NODE' : RASPI_ID,
       'BODY' : msg,
       'RESPONSE_CODE' : ""
     }
 
     if isinstance(code, ResponseCodes):
-      message_object['RESPONSE_CODE'] = code.name
+      message_object['RESPONSE_CODE'] = code.value
     elif isinstance(code, int):
       message_object['RESPONSE_CODE'] = code
   

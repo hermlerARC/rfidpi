@@ -46,4 +46,4 @@ class ResponseCodes(enum.Enum):
   }
 
   def __str__(self):
-    return __RESPONSE_MESSAGES[self.value]
+    return __RESPONSE_MESSAGES(self.name)

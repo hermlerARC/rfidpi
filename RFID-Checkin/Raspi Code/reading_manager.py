@@ -12,55 +12,13 @@ To read more about Mercury API for Python go to: https://github.com/gotthardp/py
 Edited on: March 21, 2019
 '''
 
-import threading, datetime, Tag
+import threading, datetime, Tag, response_codes
 from sensors import *
 
-class ReadingsContainer:
-  def __init__(self, timeout):
-    self.Timeout = timeout
-
-    self.InReads = []
-    self.OutReads = []
-    self.Directions = []
-
-  def AddReading(self, sensor_reading):
-    self.__clear_garbage_reads()
-
-    if sensor_reading.SensorType == SensorType.In:
-      if len(self.OutReads) > 0:
-        self.Directions.append(Direction(TimeRange(self.OutReads[0].Timestamp, sensor_reading.Timestamp), Tag.TagStatus.In))
-        self.OutReads.clear()
-      else:
-        self.InReads.append(sensor_reading)
-    elif sensor_reading.SensorType == SensorType.Out:
-      if len(self.InReads) > 0:
-        self.Directions.append(Direction(TimeRange(self.InReads[0].Timestamp, sensor_reading.Timestamp), Tag.TagStatus.Out))
-        self.InReads.clear()
-      else:
-        self.OutReads.append(sensor_reading)
-
-  def Clear(self):
-    self.InReads.clear()
-    self.OutReads.clear()
-    self.Directions.clear()
-
-  def __clear_garbage_reads(self):
-    for sensor_reading in self.InReads:
-      if (datetime.datetime.now() - sensor_reading.Timestamp).total_seconds() > self.Timeout:
-        self.InReads.remove(sensor_reading)
-
-    for sensor_reading in self.OutReads:
-      if (datetime.datetime.now() - sensor_reading.Timestamp).total_seconds() > self.Timeout:
-        self.OutReads.remove(sensor_reading)
-
-    for direction in self.Directions:
-      if (datetime.datetime.now() - direction.TimeRange.EndTime).total_seconds() > self.Timeout:
-        self.Directions.remove(direction)
-
 class Direction:
-  def __init__(self, time_range, direction):
+  def __init__(self, time_range, tag_status):
     self.TimeRange = time_range
-    self.Direction = direction
+    self.TagStatus = tag_status
 
 class TimeRange:
   def __init__(self, start_time, end_time):
@@ -77,16 +35,19 @@ class TimeRange:
     elif isinstance(test_time, TimeRange):
       return self.StartTime <= test_time.StartTime and test_time.EndTime <= self.EndTime
 
+  def Duration(self):
+    return (self.EndTime - self.StartTime)
+
 class ReadingManager():
   def __init__(self, reader, sensor_manager):
     self.__THRESHOLD_TIME = 3
 
     self.__reader = reader
 
-    self.__sensor_manager = sensor_manager
-    self.__readings_container = ReadingsContainer(self.__THRESHOLD_TIME)
-    self.__readings_container_lock = threading.Lock()
-    
+    self.__directions = []
+    self.__directions_lock = threading.Lock()
+    self.__sensor_reading = None
+
     self.__running = False
 
   def BeginReading(self, callback = None, sensor_threshold = 300, testing = False):
@@ -98,8 +59,7 @@ class ReadingManager():
       callback(tag)
 
     if self.__running:
-      print('This instance of ReadingManager is already running')
-      raise RuntimeError
+      return ResponseCodes.NODE_RUNNING
 
     self.__running = True
 
@@ -113,11 +73,9 @@ class ReadingManager():
         return ResponseCodes.NODE_RUNNING
       else:
         print("Sensor threshold must be an int that's greater than 0")
-        raise ValueError
         return ResponseCodes.NODE_STOPPED
     else:
       print('Must specify callback function')
-      raise ValueError
       return ResponseCodes.NODE_STOPPED
 
 
@@ -145,25 +103,37 @@ class ReadingManager():
   def IsRunning(self):
     return ResponseCodes.NODE_RUNNING if self.__running else ResponseCodes.NODE_STOPPED
 
-  def __get_direction(self, ctime):
-    self.__readings_container_lock.acquire()
+  def __get_direction(self, search_time):
+    self.__directions_lock.acquire()
     
     tag_status = Tag.TagStatus.Unknown
 
     for direction in self.__readings_container.Directions:
-      if (direction.TimeRange.Contains(ctime)):
+      if direction.TimeRange.Contains(search_time):
         tag_status = direction.Direction
         break
     
-    self.__readings_container_lock.release()
+    self.__directions_lock.release()
     
     return tag_status
 
   def __run_sensors(self):
     def receive_reading(sensor_reading):
-      if value <= self.__sensor_threshold:
-        self.__sensor_readings_lock.acquire()
-        self.__readings_container.AddReading(sensor_reading)
-        self.__sensor_readings_lock.release()
+      if sensor_reading.Reading <= self.__sensor_threshold:
+        if self.__sensor_reading == None:
+          self.__sensor_manager.PauseSensor(sensor_reading.SensorType)
+          self.__sensor_reading = sensor_reading
+        elif (datetime.datetime.now() - self.__sensor_reading.Timestamp).total_seconds() > self.__THRESHOLD_TIME:
+          self.__sensor_manager.UnpauseSensor(sensor_reading.SensorType.Opposite())
+          self.__sensor_manager.PauseSensor(sensor_reading.SensorType)
+          self.__sensor_reading = sensor_reading
+        else:
+          time_of_walk = TimeRange(self.__sensor_reading.Timestamp, sensor_reading.Timestamp)
+
+          self.__directions_lock.acquire()
+          self.__directions.append(Direction(time_of_walk, sensor_reading.SensorType))
+          self.__directions_lock.release()
+
+          self.__sensor_manager.UnpauseSensor(sensor_reading.SensorType.Opposite())
 
     self.__sensor_manager.RunSensors(callback=receive_reading)
