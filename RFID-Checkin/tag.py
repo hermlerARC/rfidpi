@@ -21,9 +21,7 @@ class TagStatus(enum.Enum):
 
 class Tag:
   def __init__(self, epc, status, rssi):
-    self.Time = datetime.datetime.now()
     self.RSSI = rssi
-
     if isinstance(epc, bytes):
       self.EPC = str(epc, 'utf-8')
     elif isinstance(epc, str):
@@ -39,7 +37,6 @@ class Tag:
   def to_object(self):
     return {
         "EPC" : self.EPC,
-        "Time" : str(self.Time.strftime(DATETIME_FORMAT)),
         "Status" : self.Status.name,
         "RSSI" : self.RSSI
     }

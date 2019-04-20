@@ -14,7 +14,6 @@ Edited on: March 21, 2019
 
 import RPi.GPIO as GPIO
 import time, threading, enum, datetime
-from response_codes import ResponseCodes
 
 class SensorType(enum.Enum):
   In = 0
@@ -37,13 +36,6 @@ class SensorReading:
     self.SensorType = sensor_type
     self.Reading = value
 
-  def to_object(self, time_ft = '%m/%d/%Y %H:%M:%S'):
-    return {
-      'Timestamp' : self.Timestamp.strftime(time_ft),
-      'Sensor' : str(self.SensorType),
-      'Reading' : self.Reading
-    }
-
 class Sensor:
   def __init__(self, sensor_type):
     IN_PINS = [18,23]
@@ -58,12 +50,11 @@ class Sensor:
 
   def BeginReading(self, read_speed = 1, callback = None):
     if self.__status == SensorStatus.Running:
-      print('Sensor is already running')
-      raise RuntimeError
+      raise RuntimeError('Sensor is already running')
 
     if self.__status == SensorStatus.Paused:
       self.__status = SensorStatus.Running
-      return ResponseCodes.SENSOR_RUNNING
+      return
 
     if isinstance(read_speed, int) and read_speed > 0:
       self.__read_speed = read_speed
@@ -73,28 +64,17 @@ class Sensor:
       
       run_thread = threading.Thread(target=self.__run)
       run_thread.start()
-
-      return ResponseCodes.SENSOR_RUNNING
     else:
-      print("Invalid read_speed argument: {}".format(read_speed))
-      raise ValueError
+      raise ValueError("Invalid read_speed argument: {}".format(read_speed))
  
   def StopReading(self):
-    if self.__status == SensorStatus.Stopped:
-      return ResponseCodes.SENSOR_STOPPED
-    elif self.__status == SensorStatus.Stopped or self.__status == SensorStatus.Paused:
-      self.__status = SensorStatus.Stopped
-      return ResponseCodes.SENSOR_STOPPED
+    self.__status = SensorStatus.Stopped
 
   def PauseReading(self):
-    if self.__status == SensorStatus.Paused:
-      return ResponseCodes.SENSOR_PAUSED
-    elif self.__status == SensorStatus.Running:
+    if self.__status == SensorStatus.Running:
       self.__status = SensorStatus.Paused
-      return ResponseCodes.SENSOR_PAUSED
-    elif self.__status == SensorStatus.Stopped:
-      return ResponseCodes.SENSOR_STOPPED
 
+  @property
   def Status(self):
     return self.__running
 
@@ -103,7 +83,7 @@ class Sensor:
       if self.__running == SensorStatus.Running:
         if hasattr(self.__reading_callback, '__call__'):
           callback(SensorReading(self.__sensor_type, self.__get_sensor_value()))
-          time.sleep(1/ self.__read_speed)
+          time.sleep(1 / self.__read_speed)
       elif self.__running == SensorStatus.Paused:
         continue
       elif self.__running == SensorStatus.Stopped:
@@ -136,10 +116,6 @@ class SensorManager:
     self.__running = False
 
   def RunSensors(self, read_speed = 1, callback = None):
-    if self.__running:
-      print('Sensors are already running.')
-      raise RuntimeError
-
     GPIO.setmode(GPIO.BCM)
     self.__sensors = [Sensor(SensorType.In), Sensor(SensorType.Out)]
 
@@ -147,25 +123,16 @@ class SensorManager:
     self.__sensors[0].BeginReading(read_speed = read_speed, callback=callback)
     self.__sensors[1].BeginReading(read_speed = read_speed, callback=callback)
 
-    return ResponseCodes.SENSOR_RUNNING
-
   def StopSensors(self):
-    if not self.__running:
-      return ResponseCodes.SENSOR_STOPPED
-
-    self.__running = False
-    self.__sensors[0].StopReading()
-    self.__sensors[1].StopReading()
-    
-    GPIO.cleanup()
-
-    return ResponseCodes.SENSOR_STOPPED
+    if self.__running:
+      self.__running = False
+      self.__sensors[0].StopReading()
+      self.__sensors[1].StopReading()
+      
+      GPIO.cleanup()
 
   def PauseSensor(self, sensor_type):
-    self.__sensors[sensor_type.name].PauseReading()
+    self.__sensors[sensor_type.value].PauseReading()
 
   def UnpauseSensor(self, sensor_type):
-    self.__sensors[sensor_type.name].BeginReading()
-
-  def IsRunning(self):
-    return self.__running
+    self.__sensors[sensor_type.value].BeginReading()
