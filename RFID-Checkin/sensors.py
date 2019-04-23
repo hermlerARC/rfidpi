@@ -14,6 +14,7 @@ Edited on: March 21, 2019
 
 import RPi.GPIO as GPIO
 import time, threading, enum, datetime
+from multiprocessing import Process
 
 class SensorType(enum.Enum):
   In = 0
@@ -22,8 +23,9 @@ class SensorType(enum.Enum):
   def __str__(self):
     return self.name
   
+  @property
   def Opposite(self):
-    return Out if self == In else In
+    return SensorType.Out if self == SensorType.In else SensorType.In
 
 class SensorStatus(enum.Enum):
   Running = 0
@@ -38,8 +40,8 @@ class SensorReading:
 
 class Sensor:
   def __init__(self, sensor_type):
-    IN_PINS = [18,23]
-    OUT_PINS = [25,24]
+    IN_PINS = [12,16]
+    OUT_PINS = [22,18]
 
     self.__sensor_type = sensor_type
     self.__status = SensorStatus.Stopped
@@ -48,7 +50,7 @@ class Sensor:
     GPIO.setup(self.__pins[0], GPIO.OUT)
     GPIO.setup(self.__pins[1], GPIO.IN)
 
-  def BeginReading(self, read_speed = 1, callback = None):
+  def BeginReading(self, callback, read_speed = 1):
     if self.__status == SensorStatus.Running:
       raise RuntimeError('Sensor is already running')
 
@@ -58,12 +60,9 @@ class Sensor:
 
     if isinstance(read_speed, int) and read_speed > 0:
       self.__read_speed = read_speed
-      
-      self.__reading_callback = callback
       self.__status = SensorStatus.Running
       
-      run_thread = threading.Thread(target=self.__run)
-      run_thread.start()
+      threading.Thread(target=self.__run, args=(callback,)).start()
     else:
       raise ValueError("Invalid read_speed argument: {}".format(read_speed))
  
@@ -73,20 +72,31 @@ class Sensor:
   def PauseReading(self):
     if self.__status == SensorStatus.Running:
       self.__status = SensorStatus.Paused
+      
+  def UnpauseReading(self):
+    if self.__status == SensorStatus.Paused:
+        self.__status = SensorStatus.Running
 
   @property
   def Status(self):
-    return self.__running
+    return self.__status
 
   def __run(self, callback):
     while True:
-      if self.__running == SensorStatus.Running:
-        if hasattr(self.__reading_callback, '__call__'):
-          callback(SensorReading(self.__sensor_type, self.__get_sensor_value()))
-          time.sleep(1 / self.__read_speed)
-      elif self.__running == SensorStatus.Paused:
+      if self.__status == SensorStatus.Running:
+        if hasattr(callback, '__call__'):
+          val = self.__get_sensor_value()
+          sr = SensorReading(self.__sensor_type, val)
+          callback(sr)
+          
+          if self.__read_speed <= 0:
+            time.sleep(1)
+          else:
+            time.sleep(1) #time.sleep(1 / self.__read_speed)
+            
+      elif self.__status == SensorStatus.Paused:
         continue
-      elif self.__running == SensorStatus.Stopped:
+      elif self.__status == SensorStatus.Stopped:
         break
 
   def __get_sensor_value(self):
@@ -115,13 +125,16 @@ class SensorManager:
   def __init__(self):
     self.__running = False
 
-  def RunSensors(self, read_speed = 1, callback = None):
-    GPIO.setmode(GPIO.BCM)
-    self.__sensors = [Sensor(SensorType.In), Sensor(SensorType.Out)]
-
-    self.__running = True
-    self.__sensors[0].BeginReading(read_speed = read_speed, callback=callback)
-    self.__sensors[1].BeginReading(read_speed = read_speed, callback=callback)
+  def RunSensors(self, callback, read_speed = 1):
+    def __sensor_process():
+        GPIO.setmode(GPIO.BOARD)
+        self.__sensors = [Sensor(SensorType.In), Sensor(SensorType.Out)]
+        
+        self.__running = True
+        self.__sensors[0].BeginReading(callback, read_speed = read_speed)
+        self.__sensors[1].BeginReading(callback, read_speed = read_speed)
+        
+    __sensor_process()
 
   def StopSensors(self):
     if self.__running:
@@ -135,4 +148,5 @@ class SensorManager:
     self.__sensors[sensor_type.value].PauseReading()
 
   def UnpauseSensor(self, sensor_type):
-    self.__sensors[sensor_type.value].BeginReading()
+    self.__sensors[sensor_type.value].UnpauseReading()
+    

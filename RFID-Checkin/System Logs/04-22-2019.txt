@@ -1,0 +1,149 @@
+04/22/2019 10:36:36	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 10:36:36	created sensor manager
+04/22/2019 10:36:36	created reading manager
+04/22/2019 10:36:38	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 10:38:24	received message 'check_status'
+04/22/2019 10:38:34	received message 'stop_logging'
+04/22/2019 10:38:35	received message 'stop_reader_test'
+04/22/2019 10:38:36	received message 'stop_sensor_test'
+04/22/2019 10:39:20	received message 'check_status'
+04/22/2019 10:40:33	received message 'stop_logging'
+04/22/2019 10:40:34	received message 'stop_reader_test'
+04/22/2019 10:40:35	received message 'stop_sensor_test'
+04/22/2019 10:42:09	received message 'check_status'
+04/22/2019 10:42:42	received message 'stop_logging'
+04/22/2019 10:42:43	received message 'stop_reader_test'
+04/22/2019 10:45:47	received message 'check_status'
+04/22/2019 10:45:59	received message 'stop_logging'
+04/22/2019 10:45:59	received message 'stop_reader_test'
+04/22/2019 10:48:02	received message 'check_status'
+04/22/2019 10:48:21	received message 'stop_logging'
+04/22/2019 10:49:01	received message 'check_status'
+04/22/2019 10:49:33	received message 'stop_logging'
+04/22/2019 10:49:33	received message 'stop_reader_test'
+04/22/2019 10:50:09	received message 'check_status'
+04/22/2019 10:51:02	received message 'stop_logging'
+04/22/2019 10:51:02	received message 'stop_reader_test'
+04/22/2019 10:51:11	received message 'check_status'
+04/22/2019 10:51:35	received message 'check_status'
+04/22/2019 10:51:39	received message 'start_logging'
+04/22/2019 10:51:44	current node status: logging
+04/22/2019 10:51:44	reading manager running in log mode
+04/22/2019 10:58:02	received message 'check_status'
+04/22/2019 11:00:52	received message 'stop_logging'
+04/22/2019 11:01:07	current node status: online
+04/22/2019 11:01:07	stopped reading manager logging
+04/22/2019 11:01:07	received message 'stop_reader_test'
+04/22/2019 11:01:07	received message 'check_status'
+04/22/2019 11:01:16	received message 'start_logging'
+04/22/2019 11:01:27	current node status: logging
+04/22/2019 11:01:27	reading manager running in log mode
+04/22/2019 11:01:42	received message 'stop_logging'
+04/22/2019 11:02:25	current node status: online
+04/22/2019 11:02:25	stopped reading manager logging
+04/22/2019 11:09:02	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:09:02	created sensor manager
+04/22/2019 11:09:02	created reading manager
+04/22/2019 11:09:03	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:09:25	received message 'check_status'
+04/22/2019 11:09:25	received message 'start_logging'
+04/22/2019 11:09:32	current node status: logging
+04/22/2019 11:09:32	reading manager running in log mode
+04/22/2019 11:10:05	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:10:05	created sensor manager
+04/22/2019 11:10:05	created reading manager
+04/22/2019 11:10:05	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:10:11	received message 'start_logging'
+04/22/2019 11:10:23	current node status: logging
+04/22/2019 11:10:23	reading manager running in log mode
+04/22/2019 11:11:10	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:11:10	created sensor manager
+04/22/2019 11:11:10	created reading manager
+04/22/2019 11:11:11	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:11:21	received message 'start_logging'
+04/22/2019 11:12:19	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:12:19	created sensor manager
+04/22/2019 11:12:19	created reading manager
+04/22/2019 11:12:20	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:12:29	received message 'start_logging'
+04/22/2019 11:13:47	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:13:47	created sensor manager
+04/22/2019 11:13:47	created reading manager
+04/22/2019 11:13:48	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:13:55	received message 'start_logging'
+04/22/2019 11:15:39	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:15:39	created sensor manager
+04/22/2019 11:15:39	created reading manager
+04/22/2019 11:15:40	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:15:45	received message 'start_logging'
+04/22/2019 11:15:48	current node status: logging
+04/22/2019 11:15:48	reading manager running in log mode
+04/22/2019 11:16:53	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:16:53	created sensor manager
+04/22/2019 11:16:53	created reading manager
+04/22/2019 11:16:53	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:17:01	received message 'start_logging'
+04/22/2019 11:17:08	current node status: logging
+04/22/2019 11:17:08	reading manager running in log mode
+04/22/2019 11:18:25	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:18:25	created sensor manager
+04/22/2019 11:18:25	created reading manager
+04/22/2019 11:18:26	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:18:31	received message 'start_logging'
+04/22/2019 11:20:41	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:20:41	created sensor manager
+04/22/2019 11:20:41	created reading manager
+04/22/2019 11:20:41	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:20:47	received message 'start_logging'
+04/22/2019 11:21:20	current node status: logging
+04/22/2019 11:21:20	reading manager running in log mode
+04/22/2019 11:22:30	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:22:30	created sensor manager
+04/22/2019 11:22:30	created reading manager
+04/22/2019 11:22:31	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:22:38	received message 'start_logging'
+04/22/2019 11:23:18	current node status: logging
+04/22/2019 11:23:18	reading manager running in log mode
+04/22/2019 11:24:53	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:24:53	created sensor manager
+04/22/2019 11:24:53	created reading manager
+04/22/2019 11:24:53	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:24:58	received message 'start_logging'
+04/22/2019 11:27:50	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:27:50	created sensor manager
+04/22/2019 11:27:50	created reading manager
+04/22/2019 11:27:50	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:27:55	received message 'start_logging'
+04/22/2019 11:28:02	current node status: logging
+04/22/2019 11:28:02	reading manager running in log mode
+04/22/2019 11:38:55	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:38:55	created sensor manager
+04/22/2019 11:38:55	created reading manager
+04/22/2019 11:38:56	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:39:01	received message 'start_logging'
+04/22/2019 11:40:19	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:40:19	created sensor manager
+04/22/2019 11:40:19	created reading manager
+04/22/2019 11:40:20	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:40:26	received message 'start_logging'
+04/22/2019 11:41:27	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:41:27	created sensor manager
+04/22/2019 11:41:27	created reading manager
+04/22/2019 11:41:28	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:41:37	received message 'start_logging'
+04/22/2019 11:41:43	current node status: logging
+04/22/2019 11:41:43	reading manager running in log mode
+04/22/2019 11:43:50	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:43:50	created sensor manager
+04/22/2019 11:43:50	created reading manager
+04/22/2019 11:43:50	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:43:55	received message 'start_logging'
+04/22/2019 11:44:23	current node status: logging
+04/22/2019 11:44:23	reading manager running in log mode
+04/22/2019 11:46:25	connected to reader on 'tmr:///dev/ttyUSB1'
+04/22/2019 11:46:25	created sensor manager
+04/22/2019 11:46:25	created reading manager
+04/22/2019 11:46:25	connected to MQTT client on 'reader/UPOGDU/command'
+04/22/2019 11:46:30	received message 'start_logging'
+04/22/2019 11:46:38	current node status: logging
+04/22/2019 11:46:38	reading manager running in log mode

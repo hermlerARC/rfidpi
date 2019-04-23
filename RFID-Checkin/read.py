@@ -17,7 +17,8 @@ from paho.mqtt import client as mqtt
 from reading_manager import ReadingManager
 from sensors import SensorManager
 from node_enums import *
-import pickle, mercury, datetime
+import pickle, mercury, datetime, pathlib
+import RPi.GPIO as GPIO
 
 # Unique ID to differentiate between different systems that are connected to the UI Client
 RASPI_ID = 'UPOGDU'
@@ -46,12 +47,13 @@ def connect_to_reader(path = READER_PATH, max_port = 10):
 
       return [reader, "{}{}".format(path, conn_port)]
     except:
-      pass
+      conn_port += 1
 
   return [reader, ""]
 
 class ManagerWrapper:
   def __init__(self, reader):
+    self.__print_out("connected to reader on '{}'".format(conn_path))
     self.__sensor_man = SensorManager()
     self.__print_out("created sensor manager")
 
@@ -61,8 +63,8 @@ class ManagerWrapper:
 
     # Attempt to connect to MQTT
     self.__client = mqtt.Client(transport='websockets')  # Connect with websockets
-    self.__client.on_connect = __client_connected
-    self.__client.on_message = __client_messaged
+    self.__client.on_connect = self.__client_connected
+    self.__client.on_message = self.__client_messaged
     self.__client.connect('broker.hivemq.com', port=8000)
 
     try:
@@ -74,34 +76,31 @@ class ManagerWrapper:
   def BeginLogging(self, callback):
     self.__check_availability()
 
-    self.__reading_man.BeginReading(callback=callback)
+    self.__reading_man.BeginReading(callback)
     self.__update_status(Status.LOGGING)
-    self.__print_out('reading manager running in log mode')
 
   def StopLogging(self):
     if self.__status == Status.LOGGING:
       self.__reading_man.StopReading()
       self.__update_status(Status.ONLINE)
-      self.__print_out('stopped reading manager logging')
 
   def BeginTesting(self, callback):
     self.__check_availability()
-
+    
+    print('available')
     self.__reading_man.BeginReading(callback=callback, testing=True)
+    print('started reading')
     self.__update_status(Status.RUNNING_READER_TEST)
-    self.__print_out('reading manager running in test mode')
 
   def StopTesting(self):
     if self.__status == Status.RUNNING_READER_TEST:
       self.__reading_man.StopReading()
       self.__update_status(Status.ONLINE)
-      self.__print_out('stopped reading manager testing')
 
   def ReadOnce(self, callback):
     self.__check_availability()
 
     self.__update_status(Status.REQUESTING_TAG)
-    self.__print_out('requesting single tag')
     callback(self.__reading_man.ReadOnce())
     self.__update_status(Status.ONLINE)
 
@@ -110,24 +109,22 @@ class ManagerWrapper:
 
     self.__sensor_man.RunSensors(callback=callback)
     self.__update_status(Status.RUNNING_SENSOR_TEST)
-    self.__print_out('beginning sensor test')
 
   def StopSensors(self):
     if self.__status == Status.RUNNING_SENSOR_TEST:
       self.__sensor_man.StopSensors()
       self.__update_status(Status.ONLINE)
-      self.__print_out('stopping sensor test')
   #endregion
 
   #region Client Handling
   def __client_messaged(self, client, data, msg):
     command = pickle.loads(msg.payload)
-    self.__send_message(client, Topic.NODE_RESPONSE, repr(command)) # Reply to the sender to let it know we've received the message
+    self.__send_message(Topic.NODE_RESPONSE, repr(command)) # Reply to the sender to let it know we've received the message
     self.__print_out("received message '{}'".format(command))
-
+    
     try:
       if command == Command.START_LOGGING:
-        self.BeginLogging(callback=self.__log_tag)
+        self.BeginLogging(self.__log_tag)
       elif command == Command.STOP_LOGGING:
         self.StopLogging()
       elif command == Command.READ_ONCE:
@@ -137,7 +134,7 @@ class ManagerWrapper:
       elif command == Command.STOP_SENSOR_TEST:
         self.StopSensors()
       elif command == Command.BEGIN_READER_TEST:
-        self.BeginTesting(callback=self.__log_tag)
+        self.BeginTesting(self.__log_tag)
       elif command == Command.STOP_READER_TEST:
         self.StopTesting()
       elif command == Command.CHECK_STATUS:
@@ -146,7 +143,7 @@ class ManagerWrapper:
       self.__post_error(command, error)
 
   def __client_connected(self, client, data, flags, rc):
-    client.subscribe('reader/{}/{}'.format(RASPI_ID, NodeTopic.COMMANDS), 1)
+    client.subscribe('reader/{}/{}'.format(RASPI_ID, Topic.COMMANDS), 1)
     self.__print_out("connected to MQTT client on 'reader/{}/{}'".format(RASPI_ID, Topic.COMMANDS))
 
   def __send_message(self, topic, message):
@@ -197,8 +194,10 @@ class ManagerWrapper:
     ft_msg = "{}\t{}".format(curr_time.strftime(DATETIME_FORMAT), msg)
 
     print(ft_msg)
+    directory = LOG_FILE.split(sep='/')[0] + '/'
+    pathlib.Path(directory).mkdir(parents=True, exist_ok=True) 
     with open(LOG_FILE.format(curr_time.strftime('%m-%d-%Y')), 'a') as LF:
-      LF.write(ft_msg)
+      LF.write(ft_msg + '\n')
 
   def __log_tag(self, tag):
     self.__send_message(Topic.TAG_READINGS, tag.__dict__)
@@ -219,7 +218,7 @@ if __name__ == '__main__':
   # Attempt to connect to reader
   reader, conn_path = connect_to_reader()
   if conn_path != "":
-    print_out("connected to reader on '{}'".format(conn_path))
+    pass
   else:
     raise ReaderUnreachable
     exit(1)
