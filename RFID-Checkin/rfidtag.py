@@ -13,10 +13,10 @@ class RFIDTag:
 
     def GetStatus(val):
       if isinstance(val, int):
-        return Status(val)
+        return RFIDTag.Status(val)
       elif isinstance(val, str):
-        return Status[val.title()]
-      elif isinstance(val, Status):
+        return RFIDTag.Status[val.title()]
+      elif isinstance(val, RFIDTag.Status):
         return val
       else:
         return ValueError

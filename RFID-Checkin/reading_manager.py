@@ -17,14 +17,6 @@ from sensors import *
 from tag import *
 from node_enums import Status
 
-class Direction:
-  def __init__(self, time_range, tag_status):
-    self.TimeRange = time_range
-    self.TagStatus = tag_status
-    
-  def __str__(self):
-      return "{}\t{}".format(self.TimeRange, self.TagStatus)
-
 class TimeRange:
   def __init__(self, start_time, end_time):
     if isinstance(start_time, datetime.datetime) and isinstance(end_time, datetime.datetime):
@@ -45,7 +37,7 @@ class TimeRange:
   def __str__(self):
     return "[{},{}]".format(self.StartTime, self.EndTime)
 
-class ReadingManager():
+class ReadingManager:
   def __init__(self, reader, sensor_manager):
     self.__THRESHOLD_TIME = 3
 
@@ -53,18 +45,17 @@ class ReadingManager():
     self.__sensor_manager = sensor_manager
     self.__running = False
 
-    self.__directions = []
-    self.__directions_lock = threading.Lock()
+    self.__tag_stream = []
+    self.__tag_stream_lock = threading.Lock()
     self.__sensor_reading = None
 
   def BeginReading(self, callback, sensor_threshold = 300, testing = False):
     if hasattr(callback, '__call__'):
       if isinstance(sensor_threshold, int) and sensor_threshold > 0:
-        self.__status = Status.RUNNING_READER_TEST if testing else Status.LOGGING
-
         self.__sensor_threshold = sensor_threshold
 
         self.__running = True
+        self.__run_sender(callback)
         self.__run_reader(callback, testing)
         self.__run_sensors()
       else:
@@ -75,45 +66,41 @@ class ReadingManager():
   def StopReading(self):
     self.__running = False
     self.__sensor_manager.StopSensors()
-    self.__directions_lock.acquire()
-    self.__directions.clear()
-    self.__directions_lock.release()
-    self.__reader.stop_reading()
+    self.__tag_stream_lock.acquire()
+    self.__tag_stream.clear()
+    self.__tag_stream_lock.release()
 
   def ReadOnce(self):
     tag_data = self.__reader.read()[0]
     return Tag(str(tag_data.epc, 'utf-8'), TagStatus.Unknown, tag_data.rssi)
 
-  def __run_reader(self, callback, testing):
+  def __run_sender(self, callback):
+    def send_thread():
+      while self.__running:
+        curr_time = datetime.datetime.now()
+
+        self.__tag_stream_lock.acquire()
+        for i in range(len(self.__tag_stream), -1, -1):
+          if (curr_time - self.__tag_stream[i].Timestamp).total_seconds() > self.__THRESHOLD_TIME:
+            for j in range(i, -1, -1):
+              callback(self.__tag_stream[j])
+              self.__tag_stream.pop(j)
+            break
+        self.__tag_stream_lock.release()
+
+    threading.Thread(target=send_thread).start()
+
+  def __run_reader(self, testing):
     def start_reading():
       while self.__running:
         tag_reads = self.__reader.read()
         curr_time = datetime.datetime.now()
         for tag_data in tag_reads:
-          direction = TagStatus.Unknown
-      
-          if not testing:
-            direction = self.__get_direction(curr_time)
-      
-          callback(Tag(tag_data.epc, direction, tag_data.rssi))
+          self.__tag_stream_lock.acquire()
+          self.__tag_stream.append(Tag(tag_data.epc, TagStatus.Unknown, tag_data.rssi))
+          self.__tag_stream_lock.release()
           
-    threading.Thread(target=start_reading, daemon=True).start()
-  def __get_direction(self, search_time):
-    tag_status = TagStatus.Unknown
-    
-    self.__directions_lock.acquire()
-    while len(self.__directions) > 0:
-      curr_dir = self.__directions.pop(0)
-
-      for x in self.__directions:
-          print("dir: ", x)
-          
-      print(search_time)
-      if curr_dir.TimeRange.Contains(search_time):
-        tag_status = curr_dir.TagStatus
-    self.__directions_lock.release()
-    
-    return tag_status
+    threading.Thread(target=start_reading).start()
 
   def __run_sensors(self):
     def receive_reading(sensor_reading):
@@ -128,11 +115,11 @@ class ReadingManager():
         else:
           time_of_walk = TimeRange(self.__sensor_reading.Timestamp, sensor_reading.Timestamp)
 
-          self.__directions_lock.acquire()
-          self.__directions = self.__directions[-5:] # Remove old data
-          direction = Direction(time_of_walk, sensor_reading.SensorType)
-          self.__directions.append(direction)
-          self.__directions_lock.release()
+          self.__tag_stream_lock.acquire()
+          for i in range(len(self.__tag_stream), -1, -1):
+            if time_of_walk.Contains(self.__tag_stream[i].Timestamp):
+              self.__tag_stream[i].Status = sensor_reading.SensorType
+          self.__tag_stream_lock.release()
 
           self.__sensor_manager.UnpauseSensor(sensor_reading.SensorType.Opposite)
     self.__sensor_manager.RunSensors(receive_reading)

@@ -16,5 +16,5 @@ als = [ ["dom", 'jackson'], ['das', 'hehe'], ['yup', 'nope']]
 
 alr = [ActionLawsuit(a[0],a[1]) for a in als][0:]
 
-for a in alr:
-  print(a.Title)
+for i in range(10, 0, -1):
+  print(i)

@@ -45,32 +45,30 @@ class CommandReader:
 
     if message != "":
       print(message, end=': ')
-    text_response = self.__using_commands_queue.get()
+    text_response = input()
     self.__using_commands = False
 
     return text_response
   
   def __run(self):
     while self.__running:
-      text = input() # Gets input from standard input
-
-      if text == "":
-        continue
-
-      if self.__using_commands == True:
-        self.__using_commands_lock.put(text)
+      try:
+        text = input() # Gets input from standard input
+      except KeyboardInterrupt:
+        self.Stop()
+        
+      if text == "" or self.__using_commands:
         continue
 
       commands = iter(text.split(sep=' '))
-    
-      first_command = self.__get_first_command(next(commands, default=""))
+      first_command = self.__get_first_command(next(commands, ""))
 
       if first_command == CommandReader.Command.UNRECOGNIZED:
         self.__print_error(f"Invalid first command in: '{text}'")
       elif first_command == CommandReader.Command.EXIT:
         self.Stop()
       elif first_command == CommandReader.Command.SPREADSHEET:
-        spreadsheet_command = self.__get_spreadsheet_command(next(commands, default=""))
+        spreadsheet_command = self.__get_spreadsheet_command(next(commands, ""))
 
         if spreadsheet_command == Command.CHANGE_SHEET:
           if not self.__handler.ChangeSpreadsheet():
@@ -94,32 +92,32 @@ class CommandReader:
         else:
           self.__print_error('Invalid spreadsheet command')
       elif first_command == CommandReader.Command.NODES:
-        node_command = next(commands, default=None)
-        node_argument = next(commands, default='-a')
-        selected_nodes = next(commands, default="").split(sep=',')
+        node_command = next(commands, None)
+        node_argument = next(commands, '-a')
+        selected_nodes = next(commands, "").split(sep=',')
         
         if node_command in [command.value for command in Command]:
           command = Command(node_command)
           if node_argument == '-a':
-            self.__handler.SendCommandToNodes(node_command, self.__handler.Nodes)
+            self.__handler.SendCommandToNodes(command, *(self.__handler.Nodes))
           if node_argument == '-s':
             nodes = list(filter(lambda x: x.ID in selected_nodes, self.__handler.Nodes))
             if len(nodes) == "":
-              self.__print_error(f"Could not find specificed node(s): {", ".join(nodes)}")
+              self.__print_error(f"Could not find specificed node(s): {', '.join(nodes)}")
             else:
-              self.__handler.SendCommandToNodes(node_command, *nodes)
+              self.__handler.SendCommandToNodes(command, *nodes)
         else:
           self.__print_error("Unrecognized command. Unable to send to node(s)")  
-      elif first_command == Command.EDIT:
+      elif first_command == CommandReader.Command.EDIT:
         raise NotImplementedError
-      elif first_command == Command.DISPLAY:
-        display_command = next(commands, default='a')
+      elif first_command == CommandReader.Command.DISPLAY:
+        display_command = next(commands, 'a')
 
         if display_command == 'a':
           self.__print_spreadsheet()
           self.__print_nodes()
           self.__print_tags()
-          self.__print_logs(next(commands, default=0))
+          self.__print_logs(int(next(commands, 5)))
         elif display_command == 's':
           self.__print_spreadsheet()
         elif display_command == 'r':
@@ -127,8 +125,8 @@ class CommandReader:
         elif display_command == 'n':
           self.__print_nodes()
         elif display_command == 'l':
-          self.__print_logs(next(commands, default=0))
-      elif first_command == Command.HELP:
+          self.__print_logs(int(next(commands, 5)))
+      elif first_command == CommandReader.Command.HELP:
         self.ShowHelp()
 
   def __get_first_command(self, name):
@@ -170,7 +168,7 @@ class CommandReader:
       return CommandReader.Command.UNRECOGNIZED
 
   def __print_error(self, msg):
-    print(f"{err_msg}. Use 'h' for help.")
+    print(f"{msg}. Use 'h' for help.")
 
   def __print_spreadsheet(self):
     print('\r\n')
@@ -189,10 +187,10 @@ class CommandReader:
   def __print_logs(self, rows):
     print('\r\nLogs:\r\n')
     logs = list(map(lambda v: str(v).split(sep=','), self.__handler.GetLogsFile()[-rows:]))
-    print(tabulate(logs, headers=['Timestamp', 'Status', 'EPC', 'Owner', 'Description', 'Location', 'Extra'], tablefmt="rst"))
+    print(tabulate(logs, headers=['Timestamp', 'EPC', 'Status', 'Owner', 'Description', 'Location', 'Extra'], tablefmt="rst"))
 
 #region Help
-  def ShowHelp():
+  def ShowHelp(self):
     print("""Commands:
 exit|x
   Description: Ends handler script

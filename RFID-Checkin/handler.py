@@ -15,13 +15,13 @@ Edited on: April 4, 2019
 '''
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-from node import Node, NodeStatus
+from node import Node, Status
 from log import Log
 from rfidtag import RFIDTag
 from command_reader import CommandReader
 from pathlib import Path
 from node_enums import Command
-import re, asyncio, threading, queue
+import re, asyncio, threading, queue, datetime, pickle, time
 
 class Handler:
   def __init__(self):
@@ -43,18 +43,17 @@ class Handler:
     self.__new_logs = []
 
     self.__command_reader = CommandReader(self)
-    self.__command_reader.Start()
 
     self.__google_service = None
     self.__google_login()
 
-    self.__load_settings_file()
-    self.__setup_log_file()
+    self.LoadSettingsFile()
 
-    self.__sheets_update_interval_queue = queue.Queue
+    self.__sheets_update_interval_queue = queue.Queue()
     self.__sheets_update_interval_queue.put(6)
     self.__automatic_sheets_update_running = True
     self.__start_automatic_sheet_update_service()
+    self.__command_reader.Start()
     
   @property
   def SpreadSheetID(self):
@@ -85,11 +84,11 @@ class Handler:
       txt = ""
       if isinstance(log_object, Log):
         txt = '\n' + str(log_object)
-      elif isinstance(log_object, Log):
+      elif isinstance(log_object, list):
         for log in log_object:
           if isinstance(log, Log):
+            print('add')
             txt += '\n' + str(log)
-
       return txt
 
     if write_mode == 'a':
@@ -99,6 +98,8 @@ class Handler:
       with open(self.__LOG_FILE, mode='w') as hf:
         hf.write("Timestamp,Status,EPC,Owner,Description,Location,Extra")
         hf.write(str_builder())
+        
+    self.__print_out(f"saved logs to {self.__LOG_FILE}")
 
   def GetLogsFile(self):
     '''
@@ -108,10 +109,10 @@ class Handler:
       list<Log>
     '''
     lf_lines = ""
-    with open(LOG_FILE, mode='r') as lf:
+    with open(self.__LOG_FILE, mode='r') as lf:
       lf_lines = lf.readlines()
 
-    logs = [Log(x) for x in lf_lines][1:]
+    logs = [Log(x) for x in lf_lines[1:]]
     return logs
 
   def LoadSettingsFile(self):
@@ -129,6 +130,7 @@ class Handler:
       self.__spreadsheetID = settings_obj['spreadsheet_id']
       self.__rfidtags = settings_obj['rfid_tags']
       self.__open_nodes_from_settings(settings_obj['nodes'])
+      self.__print_out(f'loaded settings from {self.__SETTINGS_FILE}')
 
   def SaveSettingsFile(self):
     node_properties = [{'id' : node.ID, 'location' : node.Location} for node in self.__nodes]
@@ -137,18 +139,20 @@ class Handler:
       'spreadsheet_id' : self.__spreadsheetID,
       'rfid_tags' : self.__rfidtags,
       'nodes' : node_properties
-    }, open(self.__SETTINGS_FILE, mode='wb'))
+    }, open(self.__SETTINGS_FILE, mode='wb'))      
+
+    self.__print_out(f'saved settings to {self.__SETTINGS_FILE}')
 
   def LoadSheets(self):
     while True:
       try:
         # Get status from spreadsheet
-        rfid_tag_values = self.__google_service.spreadsheets().values().get(spreadsheetId=self.__spreadsheetID, range=self._Handler__RFIDTAGS_RANGE).execute().get('values', [])
-        rfid_tags = [RFIDTag(*val) for val in rfid_tag_values]
+        rfid_tag_values = self.__google_service.spreadsheets().values().get(spreadsheetId=self.__spreadsheetID, range=self.__RFIDTAGS_RANGE).execute().get('values', [])
+        self.__rfidtags = [RFIDTag(*val) for val in rfid_tag_values]
 
         # Get logs from spreadsheet
-        log_values = self.__google_service.spreadsheets().values().get(spreadsheetId=self.__spreadsheetID, range=self._Handler__LOGS_RANGE).execute().get('values', [])
-        logs = [Log(*val) for val in log_values]
+        log_values = self.__google_service.spreadsheets().values().get(spreadsheetId=self.__spreadsheetID, range=self.__LOGS_RANGE).execute().get('values', [])
+        self.__new_logs = [Log(*val) for val in log_values]
 
         # Creates nodes from spreadsheet
         node_values = self.__google_service.spreadsheets().values().get(spreadsheetId=self.__spreadsheetID, range=self.__NODES_RANGE).execute().get('values', [])
@@ -185,13 +189,13 @@ class Handler:
     # ]
 
     node_vals = [[n.ID, n.Location, str(n.Status)] for n in self.__nodes]
-    rfid_tag_vals = [[r.EPC, str(r.Status), r.Owner, r.Description, r.Node.Location, r.Extra] for r in self.__rfidtags]
+    rfid_tag_vals = [[r.EPC, str(r.Status), r.Owner, r.Description, r.LastLocation, r.Extra] for r in self.__rfidtags]
     log_vals = []
 
     if log_mode == 'a':
       log_vals = [[l.Timestamp.strftime(DATETIME_FORMAT), str(l.Status), l.EPC, l.Owner, l.Description, l.Location, l.Extra] for l in self.__new_logs]
     elif log_mode == 'w':
-      log_vals = [[l.Timestamp.strftime(DATETIME_FORMAT), str(l.Status), l.EPC, l.Owner, l.Description, l.Node.Location, l.Extra] for l in self.GetLogsFile()]
+      log_vals = [[l.Timestamp.strftime(DATETIME_FORMAT), str(l.Status), l.EPC, l.Owner, l.Description, l.Location, l.Extra] for l in self.GetLogsFile()]
     
     # Tell GSheets that we want to it to post our data by column
     node_resource = {
@@ -213,23 +217,23 @@ class Handler:
     # extra formatting on the data. This prevents the program from having to understand multiple formats).
     while True:
       try:
-        service_obj.spreadsheets().values().update(spreadsheetId=self.__spreadsheetID, range=self.__NODES_RANGE, body=node_resource, valueInputOption="RAW").execute()
-        service_obj.spreadsheets().values().update(spreadsheetId=self.__spreadsheetID, range=self.__RFIDTAGS_RANGE, body=rfid_tags_resource, valueInputOption="RAW").execute()
+        self.__google_service.spreadsheets().values().update(spreadsheetId=self.__spreadsheetID, range=self.__NODES_RANGE, body=node_resource, valueInputOption="RAW").execute()
+        self.__google_service.spreadsheets().values().update(spreadsheetId=self.__spreadsheetID, range=self.__RFIDTAGS_RANGE, body=rfid_tags_resource, valueInputOption="RAW").execute()
         
         if (log_mode == 'a'):
-          service_obj.spreadsheets().values().append(spreadsheetId=self.__spreadsheetID, range=self.__LOGS_RANGE, body=logs_resource, valueInputOption="RAW").execute()
+          self.__google_service.spreadsheets().values().append(spreadsheetId=self.__spreadsheetID, range=self.__LOGS_RANGE, body=logs_resource, valueInputOption="RAW").execute()
         elif (log_mode == 'w'):
-          service_obj.spreadsheets().values().update(spreadsheetId=self.__spreadsheetID, range=self.__LOGS_RANGE, body=logs_resource, valueInputOption="RAW").execute()
+          self.__google_service.spreadsheets().values().update(spreadsheetId=self.__spreadsheetID, range=self.__LOGS_RANGE, body=logs_resource, valueInputOption="RAW").execute()
         
         self.__new_logs.clear() # Prevent duplicates being added to the spreadsheet
         break
       except ConnectionResetError:
-        print_out('reconnecting to Google API')
-        establish_google_conn()
+        self.__print_out('reconnecting to Google API')
+        self.__google_login()
 
-    print_out(f'saved data to {self.__spreadsheetID} spreadsheet')
+    self.__print_out(f'saved data to {self.__spreadsheetID} spreadsheet')
 
-  async def SendCommandToNodes(self, command, *args):
+  def SendCommandToNodes(self, command, *args):
     """Sends command to several or single nodes
 
     Args:
@@ -237,12 +241,9 @@ class Handler:
       *args: tuple, IDs of node(s) to send message
     """
 
-    for node_id in args:
-      node = next(n for n in self.__nodes if n.ID = node_id, None)
-
-      if node:
-        await node.SendMessage(command)
-        self.__print_out(f"Sent {command} to {node_id}")
+    for node in args:
+      node.SendMessage(command)
+      self.__print_out(f"sending {command} to {node.ID}")
 
   def ChangeSpreadsheet(self):
     s_id = self.__command_reader.GetInput('Enter spreadsheet ID')
@@ -261,6 +262,7 @@ class Handler:
 
   def SafeClose(self):
     self.__shutdown_nodes()
+    self.__stop_automatic_sheet_update_service()
     self.SaveSettingsFile()
     self.UpdateSheets(log_mode='a')
 
@@ -280,10 +282,11 @@ class Handler:
         'location' : [location of the node]
     """
     self.__quick_shutdown_nodes()
-    self.__nodes = [Node(node['id'], node['location'], self.__receive_log, self.__receive_node_read_once_tag,
+    self.__nodes = [Node(node['id'], node['location'], self.__receive_node_log, self.__receive_node_read_once_tag,
                     self.__receive_node_reader_reading, self.__receive_node_sensor_reading, self.__receive_node_error) for node in node_settings]
 
   def __shutdown_nodes(self):
+    self.__print_out('shutting down nodes')
     for node in self.__nodes:
       node.Shutdown()
 
@@ -307,7 +310,7 @@ class Handler:
     """
 
     try:
-      index = self.__rfidtags.index(next(tag for tag in self.__rfidtags if tag.EPC == log['BODY']['EPC'], None))
+      index = self.__rfidtags.index(next((tag for tag in self.__rfidtags if tag.EPC == log['BODY']['EPC']), None))
     except ValueError:
       return
 
@@ -354,10 +357,10 @@ class Handler:
         self.__rfidtags.append(RFIDTag(message['BODY']['EPC'], message['BODY']['Status'], owner, description, location, extra))
         self.SaveSettingsFile()
         break
-    else:
-      yes_no_prompt = self.__command_reader.GetInput(f"Invalid tag info. Retry? (y/n)")
-      if yes_no_prompt.lower() != 'y':
-        break
+      else:
+        yes_no_prompt = self.__command_reader.GetInput(f"Invalid tag info. Retry? (y/n)")
+        if yes_no_prompt.lower() != 'y':
+          break
 
   def __receive_node_reader_reading(self, message):
     """Prints tag reading from the node.
@@ -373,7 +376,7 @@ class Handler:
         }
        }
     """
-    self.__print_out(f'{message['ID']}\t{message['BODY']['EPC']}')
+    self.__print_out(f"{message['ID']}\t{message['BODY']['EPC']}")
 
   def __receive_node_sensor_reading(self, sensor_reading):
     """Prints sensor readings from the node.
@@ -404,13 +407,13 @@ class Handler:
         }
        }
     """
-    self.__print_out(f'{message['ID']} reported {str(message['BODY']['ERROR_MESSAGE'])} after sending {message['BODY']['TRIGGER_COMMAND'].value}')
+    self.__print_out(f"{message['ID']} reported {str(message['BODY']['ERROR_MESSAGE'])} after sending {message['BODY']['TRIGGER_COMMAND'].value}")
 
   def __receive_node_status(self, status):
     self.__print_out(f"node is now {status.value}")
 
   def __print_out(self, message):
-    print(f"{datetime.datetime.now().strftime(DATETIME_FORMAT)}\t{message}")
+    print(f"{datetime.datetime.now().strftime(self.__DATETIME_FORMAT)}\t{message}")
 
   def __start_automatic_sheet_update_service(self):
     '''
@@ -428,7 +431,7 @@ class Handler:
       while self.__automatic_sheets_update_running:
         try:
           interval = self.__sheets_update_interval_queue.get_nowait()
-          timeslice = 24 / self.__sheets_update_interval * 3600
+          timeslice = 24 / interval * 3600
         except queue.Empty:
           pass
 

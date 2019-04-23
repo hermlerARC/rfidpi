@@ -1,4 +1,4 @@
-import enum, threading, datetime, asyncio, pickle
+import enum, threading, datetime, pickle
 from node_enums import *
 from paho.mqtt import client
 
@@ -37,38 +37,41 @@ class Node:
     self.__closing = False
     
     self.__node_replies = []
+    self.__node_replies_lock = threading.Lock()
 
     self.__client = client.Client(transport='websockets') # Connect with websockets
     self.__client.on_connect = self.__on_connect
     self.__client.on_message = self.__on_message
     self.__client.connect('broker.hivemq.com', port=8000)
 
+    threading.Thread(target=self.__client.loop_forever).start()
+
   def __str__(self):
     return f"{self.__id},{self.__location},{str(self.__connected)}"
 
 #region Public
-  async def SendMessage(self, message):
+  def SendMessage(self, message):
     if isinstance(message, Command):
-      await self.__send_message(message)
+      threading.Thread(target=self.__send_message, args=(message,)).start()
 
-  async def CheckStatus(self):
-    await self.__send_message(Command.CHECK_STATUS)
+  def CheckStatus(self):
+    self.__send_message(Command.CHECK_STATUS)
     return self.__status
 
   def QuickShutdown(self):
     self.__closing = True
     self.__client.disconnect()
 
-  async def Shutdown(self):
-    await self.StopLogging()
-    await self.StopSensorTest()
-    await self.StopSensorTest()
+  def Shutdown(self):
+    self.SendMessage(Command.STOP_LOGGING)
+    self.SendMessage(Command.STOP_READER_TEST)
+    self.SendMessage(Command.STOP_SENSOR_TEST)
 
     self.__closing = True
     self.__client.disconnect()
 
-  async def Reset(self):
-    await self.Shutdown()
+  def Reset(self):
+    self.Shutdown()
     self.__init__(self.__id, self.__locaiton)
 
   @property
@@ -84,39 +87,41 @@ class Node:
     return self.__status
 
   @property
-  async def NodeConnected(self):
-    return await self.__send_message(Command.PING, timeout=Node.__CONNECTIVITY_TIMEOUT)
+  def NodeConnected(self):
+    return self.__send_message(Command.PING, timeout=Node.__CONNECTIVITY_TIMEOUT)
 #endregion
 
-  async def __send_message(self, message, timeout = 5):
+  def __send_message(self, message, callback=None, timeout = 15):
     if not isinstance(timeout, int) or timeout < 0:
       raise ValueError("Invalid timeout argument. Timeout must be an integer greater than 0.")
     if not isinstance(message, Command):
-      raise ValueError("Invalid message argument. Must be of type Node.Command")
+      raise ValueError("Invalid message argument. Must be of type Command")
+    
+    self.__client.publish(f'reader/{self.__id}/{Topic.COMMANDS}', pickle.dumps(message), qos=1)
 
     start_time = datetime.datetime.now()
     expected_response = repr(message)
     received_response = False
-
-    self.__client.publish(f'reader/{self.__id}/{Topic.COMMANDS}', pickl.dumps(message), qos=1)
-
-    while not (received_response or self.__closing) and (datetime.datetime.now() - start_time).total_seconds <= timeout:
+    
+    while not (received_response or self.__closing) and (datetime.datetime.now() - start_time).total_seconds() <= timeout:
+      self.__node_replies_lock.acquire()
       if expected_response in self.__node_replies:
         self.__node_replies.remove(expected_response)
         received_response = True
-        break
-      await asyncio.sleep(0.01)
-
+      self.__node_replies_lock.release()
+    
+    if received_response:
+      print(f"got response after {(datetime.datetime.now() - start_time).total_seconds() * 1000} ms")
     return received_response
 
-  async def __on_connect(self, client, data, flags, rc):
+  def __on_connect(self, client, data, flags, rc):
     client.subscribe(f'reader/{self.__id}/{Topic.NODE_STATUS}', 1) 
     client.subscribe(f'reader/{self.__id}/{Topic.NODE_RESPONSE}', 1) 
     client.subscribe(f'reader/{self.__id}/{Topic.TAG_READINGS}', 1) 
     client.subscribe(f'reader/{self.__id}/{Topic.SENSOR_READINGS}', 1)
     client.subscribe(f'reader/{self.__id}/{Topic.ERROR_CODES}', 1)
 
-    await self.CheckStatus()
+    self.CheckStatus()
 
   def __on_message(self, client, data, msg):
     message_obj = pickle.loads(msg.payload)
@@ -127,6 +132,7 @@ class Node:
     elif topic == Topic.NODE_RESPONSE:
       self.__node_replies_lock.acquire()
       self.__node_replies.append(message_obj['BODY'])
+      print(f"added item {message_obj['BODY']}")
       self.__node_replies_lock.release()
     elif topic == Topic.TAG_READINGS:
       if self.__status == Status.LOGGING:

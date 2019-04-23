@@ -1,4 +1,4 @@
-import rfidtag, datetime, re
+import rfidtag, datetime, re, enum
 
 class Log:
   __DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
@@ -14,10 +14,10 @@ class Log:
 
     def GetStatus(val):
       if isinstance(val, int):
-        return Status(val)
+        return Log.Status(val)
       elif isinstance(val, str):
-        return Status[val.title()]
-      elif isinstance(val, Status):
+        return Log.Status[val.title()]
+      elif isinstance(val, Log.Status):
         return val
       else:
         return ValueError
@@ -56,5 +56,5 @@ class Log:
     raise ValueError
 
   def __str__(self):
-    return f"{self.Timestamp.strftime(__DATETIME_FORMAT)},{self.EPC},{str(self.Status)},{self.Owner},{self.Description},{self.Location},{self.Extra}"
+    return f"{self.Timestamp.strftime(Log.__DATETIME_FORMAT)},{self.EPC},{str(self.Status)},{self.Owner},{self.Description},{self.Location},{self.Extra}"
 
