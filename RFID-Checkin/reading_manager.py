@@ -56,8 +56,11 @@ class ReadingManager:
 
         self.__running = True
         self.__run_sender(callback)
-        self.__run_reader(callback, testing)
+        print('setup sender')
+        self.__run_reader(testing)
+        print('setup reader')
         self.__run_sensors()
+        print('setup sensors')
       else:
         raise ValueError("Sensor threshold must be an int that's greater than 0")
     else:
@@ -80,13 +83,14 @@ class ReadingManager:
         curr_time = datetime.datetime.now()
 
         self.__tag_stream_lock.acquire()
-        for i in range(len(self.__tag_stream), -1, -1):
-          if (curr_time - self.__tag_stream[i].Timestamp).total_seconds() > self.__THRESHOLD_TIME:
+        for i in range(len(self.__tag_stream)-1, -1, -1):
+          if (curr_time - self.__tag_stream[i].Timestamp).total_seconds() > self.__THRESHOLD_TIME or self.__tag_stream[i].Status != TagStatus.Unknown:
             for j in range(i, -1, -1):
               callback(self.__tag_stream[j])
               self.__tag_stream.pop(j)
             break
         self.__tag_stream_lock.release()
+        time.sleep(1)
 
     threading.Thread(target=send_thread).start()
 
@@ -116,7 +120,7 @@ class ReadingManager:
           time_of_walk = TimeRange(self.__sensor_reading.Timestamp, sensor_reading.Timestamp)
 
           self.__tag_stream_lock.acquire()
-          for i in range(len(self.__tag_stream), -1, -1):
+          for i in range(len(self.__tag_stream)-1, -1, -1):
             if time_of_walk.Contains(self.__tag_stream[i].Timestamp):
               self.__tag_stream[i].Status = sensor_reading.SensorType
           self.__tag_stream_lock.release()

@@ -354,3 +354,103 @@
 04/23/2019 13:56:01	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -25}
 04/23/2019 13:56:05	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
 04/23/2019 13:56:05	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/23/2019 14:15:16	received message 'stop_logging'
+04/23/2019 14:15:16	current node status: online
+04/23/2019 14:38:54	connected to reader on 'tmr:///dev/ttyUSB1'
+04/23/2019 14:38:54	created sensor manager
+04/23/2019 14:38:54	created reading manager
+04/23/2019 14:38:55	connected to MQTT client on 'reader/UPOGDU/command'
+04/23/2019 14:39:19	received message 'check_status'
+04/23/2019 14:39:19	received message 'start_logging'
+04/23/2019 14:41:17	connected to reader on 'tmr:///dev/ttyUSB1'
+04/23/2019 14:41:17	created sensor manager
+04/23/2019 14:41:17	created reading manager
+04/23/2019 14:41:18	connected to MQTT client on 'reader/UPOGDU/command'
+04/23/2019 14:41:24	received message 'start_logging'
+04/23/2019 14:42:32	connected to reader on 'tmr:///dev/ttyUSB1'
+04/23/2019 14:42:32	created sensor manager
+04/23/2019 14:42:32	created reading manager
+04/23/2019 14:42:33	connected to MQTT client on 'reader/UPOGDU/command'
+04/23/2019 14:42:40	received message 'start_logging'
+04/23/2019 14:43:24	connected to reader on 'tmr:///dev/ttyUSB1'
+04/23/2019 14:43:24	created sensor manager
+04/23/2019 14:43:24	created reading manager
+04/23/2019 14:43:25	connected to MQTT client on 'reader/UPOGDU/command'
+04/23/2019 14:43:29	received message 'start_logging'
+04/23/2019 14:45:09	connected to reader on 'tmr:///dev/ttyUSB1'
+04/23/2019 14:45:09	created sensor manager
+04/23/2019 14:45:09	created reading manager
+04/23/2019 14:45:09	connected to MQTT client on 'reader/UPOGDU/command'
+04/23/2019 14:45:15	received message 'start_logging'
+04/23/2019 14:45:51	connected to reader on 'tmr:///dev/ttyUSB1'
+04/23/2019 14:45:51	created sensor manager
+04/23/2019 14:45:51	created reading manager
+04/23/2019 14:45:52	connected to MQTT client on 'reader/UPOGDU/command'
+04/23/2019 14:45:57	received message 'start_logging'
+04/23/2019 14:46:04	current node status: logging
+04/23/2019 14:46:47	connected to reader on 'tmr:///dev/ttyUSB1'
+04/23/2019 14:46:47	created sensor manager
+04/23/2019 14:46:47	created reading manager
+04/23/2019 14:46:48	connected to MQTT client on 'reader/UPOGDU/command'
+04/23/2019 14:46:54	received message 'start_logging'
+04/23/2019 14:47:00	current node status: logging
+04/23/2019 14:48:11	connected to reader on 'tmr:///dev/ttyUSB1'
+04/23/2019 14:48:11	created sensor manager
+04/23/2019 14:48:11	created reading manager
+04/23/2019 14:48:11	connected to MQTT client on 'reader/UPOGDU/command'
+04/23/2019 14:48:17	received message 'start_logging'
+04/23/2019 14:48:25	current node status: logging
+04/23/2019 14:48:43	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 48, 38, 580062)}
+04/23/2019 14:48:49	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 48, 39, 152231)}
+04/23/2019 14:48:54	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 48, 50, 409344)}
+04/23/2019 14:49:02	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <SensorType.In: 0>, 'RSSI': -32, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 48, 49, 818898)}
+04/23/2019 14:50:26	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 22, 722764)}
+04/23/2019 14:50:26	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 23, 297963)}
+04/23/2019 14:50:27	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <SensorType.In: 0>, 'RSSI': -32, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 23, 872749)}
+04/23/2019 14:50:38	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 34, 627952)}
+04/23/2019 14:50:39	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 35, 206502)}
+04/23/2019 14:50:44	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <SensorType.Out: 1>, 'RSSI': -32, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 40, 855028)}
+04/23/2019 14:50:47	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <SensorType.In: 0>, 'RSSI': -30, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 44, 292990)}
+04/23/2019 14:50:47	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 43, 702463)}
+04/23/2019 14:50:48	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <SensorType.In: 0>, 'RSSI': -30, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 44, 885445)}
+04/23/2019 14:50:48	read tag: {'EPC': 'E20035636BA8B730E6B1EADC', 'Status': <SensorType.In: 0>, 'RSSI': -36, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 45, 494583)}
+04/23/2019 14:50:54	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <SensorType.In: 0>, 'RSSI': -32, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 45, 494498)}
+04/23/2019 14:50:54	read tag: {'EPC': 'E20035636BA8B730E6B1EADC', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -36, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 46, 696830)}
+04/23/2019 14:50:54	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -23, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 46, 696780)}
+04/23/2019 14:50:55	read tag: {'EPC': 'E20035636BA8B730E6B1EADC', 'Status': <SensorType.In: 0>, 'RSSI': -34, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 46, 92946)}
+04/23/2019 14:50:55	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <SensorType.In: 0>, 'RSSI': -32, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 50, 46, 92901)}
+04/23/2019 14:51:16	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 51, 13, 301702)}
+04/23/2019 14:51:17	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 51, 14, 469769)}
+04/23/2019 14:51:17	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 51, 13, 899140)}
+04/23/2019 14:51:20	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -36, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 51, 16, 187346)}
+04/23/2019 14:51:22	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 51, 17, 923800)}
+04/23/2019 14:51:41	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -36, 'Timestamp': datetime.datetime(2019, 4, 23, 14, 51, 36, 81162)}
+04/23/2019 14:52:57	received message 'stop_logging'
+04/23/2019 14:52:58	current node status: online
+04/23/2019 14:55:28	connected to reader on 'tmr:///dev/ttyUSB1'
+04/23/2019 14:55:28	created sensor manager
+04/23/2019 14:55:28	created reading manager
+04/23/2019 14:55:28	connected to MQTT client on 'reader/UPOGDU/command'
+04/23/2019 14:55:49	received message 'check_status'
+04/23/2019 14:55:49	received message 'start_logging'
+04/23/2019 14:55:56	current node status: logging
+04/23/2019 14:56:28	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 56, 20, 502312), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -32}
+04/23/2019 14:56:36	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 56, 21, 660288), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -25}
+04/23/2019 14:56:36	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 56, 21, 77414), 'Status': <SensorType.In: 0>, 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -32}
+04/23/2019 14:56:42	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 56, 35, 665945), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -30}
+04/23/2019 14:56:47	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 56, 36, 248506), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -23}
+04/23/2019 14:56:56	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 56, 47, 490208), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636BC2FF30E6B253FC', 'RSSI': -36}
+04/23/2019 14:57:02	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 56, 49, 239180), 'Status': <SensorType.Out: 1>, 'EPC': 'E20035636BBBD830E6B23760', 'RSSI': -21}
+04/23/2019 14:57:02	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 56, 48, 658425), 'Status': <SensorType.Out: 1>, 'EPC': 'E20035636BBBD830E6B23760', 'RSSI': -18}
+04/23/2019 14:57:02	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 56, 48, 91287), 'Status': <SensorType.Out: 1>, 'EPC': 'E20035636BC2FF30E6B253FC', 'RSSI': -32}
+04/23/2019 14:57:02	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 56, 48, 91229), 'Status': <SensorType.Out: 1>, 'EPC': 'E20035636BBBD830E6B23760', 'RSSI': -30}
+04/23/2019 14:57:12	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 57, 3, 855020), 'Status': <SensorType.Out: 1>, 'EPC': 'E20035636BC2FF30E6B253FC', 'RSSI': -32}
+04/23/2019 14:57:20	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 57, 2, 717661), 'Status': <SensorType.Out: 1>, 'EPC': 'E20035636BC2FF30E6B253FC', 'RSSI': -34}
+04/23/2019 14:57:20	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 57, 5, 604015), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636BBBD830E6B23760', 'RSSI': -34}
+04/23/2019 14:57:22	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 57, 5, 603962), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636BC2FF30E6B253FC', 'RSSI': -32}
+04/23/2019 14:57:27	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 57, 5, 20318), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636BC2FF30E6B253FC', 'RSSI': -30}
+04/23/2019 14:57:31	read tag: {'Timestamp': datetime.datetime(2019, 4, 23, 14, 57, 4, 446153), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636BC2FF30E6B253FC', 'RSSI': -30}
+04/23/2019 14:57:42	received message 'stop_logging'
+04/23/2019 14:57:43	current node status: online
+04/23/2019 14:58:01	received message 'stop_logging'
+04/23/2019 14:58:02	received message 'stop_reader_test'

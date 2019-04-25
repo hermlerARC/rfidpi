@@ -33,6 +33,8 @@ class Tag:
       self.Status = TagStatus(status)
     elif isinstance(status, str):
       self.Status  = TagStaus[status.title()]
+    
+    self.Timestamp = datetime.datetime.now()
       
   def to_object(self):
     return {

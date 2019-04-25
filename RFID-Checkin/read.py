@@ -15,7 +15,7 @@ Edited on: March 21, 2019
 
 from paho.mqtt import client as mqtt
 from reading_manager import ReadingManager
-from sensors import SensorManager
+from sensors import LaserManager
 from node_enums import *
 import pickle, mercury, datetime, pathlib
 import RPi.GPIO as GPIO
@@ -54,10 +54,10 @@ def connect_to_reader(path = READER_PATH, max_port = 10):
 class ManagerWrapper:
   def __init__(self, reader):
     self.__print_out("connected to reader on '{}'".format(conn_path))
-    self.__sensor_man = SensorManager()
+    self.__laser_man = LaserManager()
     self.__print_out("created sensor manager")
 
-    self.__reading_man = ReadingManager(reader, self.__sensor_man)
+    self.__reading_man = ReadingManager(reader, self.__laser_man)
     self.__print_out("created reading manager")
     self.__status = Status.ONLINE
 
@@ -104,15 +104,15 @@ class ManagerWrapper:
     callback(self.__reading_man.ReadOnce())
     self.__update_status(Status.ONLINE)
 
-  def TestSensors(self, callback):
+  def TestLasers(self, callback):
     self.__check_availability()
 
-    self.__sensor_man.RunSensors(callback=callback)
+    self.__laser_man.StartLasers(callback=callback)
     self.__update_status(Status.RUNNING_SENSOR_TEST)
 
   def StopSensors(self):
     if self.__status == Status.RUNNING_SENSOR_TEST:
-      self.__sensor_man.StopSensors()
+      self.__laser_man.StopLasers()
       self.__update_status(Status.ONLINE)
   #endregion
 
@@ -200,7 +200,9 @@ class ManagerWrapper:
       LF.write(ft_msg + '\n')
 
   def __log_tag(self, tag):
+    print('called')
     self.__send_message(Topic.TAG_READINGS, tag.__dict__)
+    print('sending tag')
     self.__print_out('read tag: {}'.format(tag.__dict__))
 
   def __log_sensor_reading(self, sensor_reading):

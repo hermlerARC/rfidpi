@@ -1,0 +1,1 @@
+04/24/2019 07:38:30	connected to MQTT client on 'reader/UPOGDU/command'

@@ -1,0 +1,196 @@
+04/25/2019 11:07:24	received message 'check_status'
+04/25/2019 11:07:25	received message 'start_logging'
+04/25/2019 11:07:35	current node status: logging
+04/25/2019 11:08:52	read tag: {'Timestamp': datetime.datetime(2019, 4, 25, 11, 8, 47, 269494), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -34}
+04/25/2019 11:09:01	read tag: {'Timestamp': datetime.datetime(2019, 4, 25, 11, 8, 48, 979104), 'Status': <SensorType.In: 0>, 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -30}
+04/25/2019 11:09:07	read tag: {'Timestamp': datetime.datetime(2019, 4, 25, 11, 8, 48, 405453), 'Status': <SensorType.In: 0>, 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -32}
+04/25/2019 11:09:17	read tag: {'Timestamp': datetime.datetime(2019, 4, 25, 11, 9, 7, 530068), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -32}
+04/25/2019 11:09:28	read tag: {'Timestamp': datetime.datetime(2019, 4, 25, 11, 9, 8, 676285), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -32}
+04/25/2019 11:09:43	read tag: {'Timestamp': datetime.datetime(2019, 4, 25, 11, 9, 8, 105123), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -27}
+04/25/2019 11:13:03	connected to reader on 'tmr:///dev/ttyUSB1'
+04/25/2019 11:13:03	created sensor manager
+04/25/2019 11:13:03	created reading manager
+04/25/2019 11:13:04	connected to MQTT client on 'reader/UPOGDU/command'
+04/25/2019 11:13:33	received message 'check_status'
+04/25/2019 11:13:33	received message 'start_logging'
+04/25/2019 11:14:03	current node status: logging
+04/25/2019 11:15:13	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 15, 8, 100166), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:15:17	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 15, 8, 684724), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:15:39	received message 'stop_logging'
+04/25/2019 11:15:40	current node status: online
+04/25/2019 11:15:40	received message 'stop_reader_test'
+04/25/2019 11:15:40	received message 'stop_sensor_test'
+04/25/2019 11:17:40	received message 'check_status'
+04/25/2019 11:17:40	received message 'start_logging'
+04/25/2019 11:17:46	current node status: logging
+04/25/2019 11:17:53	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 17, 52, 605682), 'Status': <SensorType.Out: 1>, 'RSSI': -34}
+04/25/2019 11:17:56	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 17, 53, 211160), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:18:00	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 17, 53, 782577), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -16}
+04/25/2019 11:18:15	received message 'stop_logging'
+04/25/2019 11:18:24	current node status: online
+04/25/2019 11:18:24	received message 'stop_reader_test'
+04/25/2019 11:19:22	received message 'check_status'
+04/25/2019 11:19:23	received message 'start_logging'
+04/25/2019 11:19:43	current node status: logging
+04/25/2019 11:20:08	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 19, 58, 353717), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:20:16	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 19, 58, 933957), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:20:53	received message 'stop_logging'
+04/25/2019 11:20:53	current node status: online
+04/25/2019 11:20:54	received message 'stop_reader_test'
+04/25/2019 11:21:38	received message 'check_status'
+04/25/2019 11:21:39	received message 'start_logging'
+04/25/2019 11:21:45	current node status: logging
+04/25/2019 11:22:16	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 22, 8, 751003), 'Status': <SensorType.In: 0>, 'RSSI': -25}
+04/25/2019 11:22:31	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 22, 8, 181057), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -23}
+04/25/2019 11:22:50	received message 'stop_logging'
+04/25/2019 11:22:45	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 22, 7, 605630), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:22:55	current node status: online
+04/25/2019 11:22:55	received message 'stop_reader_test'
+04/25/2019 11:23:24	received message 'check_status'
+04/25/2019 11:23:24	received message 'start_logging'
+04/25/2019 11:23:51	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 23, 47, 232046), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -25}
+04/25/2019 11:23:44	current node status: logging
+04/25/2019 11:23:56	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 23, 46, 652732), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:24:47	received message 'stop_logging'
+04/25/2019 11:24:58	current node status: online
+04/25/2019 11:24:58	received message 'stop_reader_test'
+04/25/2019 11:24:59	received message 'check_status'
+04/25/2019 11:24:59	received message 'start_logging'
+04/25/2019 11:25:17	current node status: logging
+04/25/2019 11:25:29	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 25, 28, 552209), 'Status': <SensorType.In: 0>, 'RSSI': -32}
+04/25/2019 11:25:35	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 25, 29, 140321), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -27}
+04/25/2019 11:25:40	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 25, 29, 728963), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -23}
+04/25/2019 11:25:48	received message 'stop_logging'
+04/25/2019 11:25:54	current node status: online
+04/25/2019 11:25:54	received message 'stop_reader_test'
+04/25/2019 11:26:23	received message 'check_status'
+04/25/2019 11:26:23	received message 'start_logging'
+04/25/2019 11:26:38	current node status: logging
+04/25/2019 11:26:46	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 26, 41, 156018), 'Status': <SensorType.In: 0>, 'RSSI': -25}
+04/25/2019 11:26:46	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 26, 40, 569134), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:26:46	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 26, 39, 992143), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:26:52	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 26, 46, 400565), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:26:58	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 26, 47, 529140), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:28:23	received message 'stop_logging'
+04/25/2019 11:28:25	current node status: online
+04/25/2019 11:28:25	received message 'stop_reader_test'
+04/25/2019 11:28:41	received message 'check_status'
+04/25/2019 11:28:41	received message 'start_logging'
+04/25/2019 11:28:48	current node status: logging
+04/25/2019 11:29:00	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 28, 55, 390371), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:29:13	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 28, 55, 964396), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:29:36	received message 'stop_logging'
+04/25/2019 11:29:38	current node status: online
+04/25/2019 11:29:38	received message 'stop_reader_test'
+04/25/2019 11:30:45	received message 'check_status'
+04/25/2019 11:30:45	received message 'start_logging'
+04/25/2019 11:31:06	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 31, 0, 642585), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -25}
+04/25/2019 11:30:56	current node status: logging
+04/25/2019 11:31:23	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 31, 0, 66354), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:31:29	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 31, 1, 219781), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:31:47	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 31, 23, 167744), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:33:10	received message 'stop_logging'
+04/25/2019 11:33:10	current node status: online
+04/25/2019 11:33:10	received message 'stop_reader_test'
+04/25/2019 11:33:31	received message 'check_status'
+04/25/2019 11:33:31	received message 'start_logging'
+04/25/2019 11:33:44	current node status: logging
+04/25/2019 11:33:53	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 33, 48, 352614), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -25}
+04/25/2019 11:33:55	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 33, 47, 781555), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:33:57	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 33, 47, 202478), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:34:19	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 34, 16, 368230), 'Status': <SensorType.Out: 1>, 'RSSI': -36}
+04/25/2019 11:35:06	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 35, 1, 784580), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:35:08	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 35, 4, 58539), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:35:11	read tag: {'EPC': 'E20035636BBBD830E6B23760', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 35, 3, 477830), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:35:16	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 35, 6, 323978), 'Status': <SensorType.In: 0>, 'RSSI': -34}
+04/25/2019 11:35:23	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 35, 18, 97302), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -39}
+04/25/2019 11:35:56	received message 'stop_logging'
+04/25/2019 11:35:59	current node status: online
+04/25/2019 11:35:59	received message 'stop_reader_test'
+04/25/2019 11:37:10	received message 'check_status'
+04/25/2019 11:37:10	received message 'start_logging'
+04/25/2019 11:37:28	current node status: logging
+04/25/2019 11:37:40	read tag: {'EPC': 'E20035636BBBD830E6B23760', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 37, 37, 186844), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:37:45	read tag: {'EPC': 'E20035636BBBD830E6B23760', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 37, 37, 757060), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:38:06	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 37, 55, 674627), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:38:19	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 37, 56, 824850), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -27}
+04/25/2019 11:38:42	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 37, 56, 253504), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:38:48	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 38, 42, 217660), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:38:57	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 38, 43, 952959), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -27}
+04/25/2019 11:39:03	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 38, 43, 365504), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -27}
+04/25/2019 11:39:09	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 38, 42, 794402), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:39:13	received message 'stop_logging'
+04/25/2019 11:39:15	current node status: online
+04/25/2019 11:40:13	received message 'check_status'
+04/25/2019 11:40:13	received message 'start_logging'
+04/25/2019 11:40:24	current node status: logging
+04/25/2019 11:40:30	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 29, 637737), 'Status': <SensorType.Out: 1>, 'RSSI': -30}
+04/25/2019 11:40:33	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 30, 213847), 'Status': <SensorType.In: 0>, 'RSSI': -30}
+04/25/2019 11:40:34	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 33, 76746), 'Status': <SensorType.Out: 1>, 'RSSI': -34}
+04/25/2019 11:40:34	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 30, 811152), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:37	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 34, 244939), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -36}
+04/25/2019 11:40:37	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 33, 649386), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:38	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 37, 689617), 'Status': <SensorType.In: 0>, 'RSSI': -34}
+04/25/2019 11:40:38	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 37, 101145), 'Status': <SensorType.In: 0>, 'RSSI': -34}
+04/25/2019 11:40:38	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 35, 976043), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:38	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 35, 391562), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:38	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 34, 815796), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:40	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 38, 888669), 'Status': <SensorType.In: 0>, 'RSSI': -34}
+04/25/2019 11:40:40	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 38, 272881), 'Status': <SensorType.In: 0>, 'RSSI': -34}
+04/25/2019 11:40:44	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 40, 53868), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:44	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 39, 464400), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:45	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 42, 934469), 'Status': <SensorType.Out: 1>, 'RSSI': -32}
+04/25/2019 11:40:45	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 42, 358680), 'Status': <SensorType.Out: 1>, 'RSSI': -32}
+04/25/2019 11:40:45	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 41, 783904), 'Status': <SensorType.Out: 1>, 'RSSI': -36}
+04/25/2019 11:40:45	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 41, 217985), 'Status': <SensorType.Out: 1>, 'RSSI': -32}
+04/25/2019 11:40:45	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 40, 617483), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:48	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 44, 91726), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:49	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 45, 842003), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:40:49	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 45, 265978), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:40:49	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 44, 660997), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:50	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 48, 718277), 'Status': <SensorType.Out: 1>, 'RSSI': -30}
+04/25/2019 11:40:50	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 48, 145996), 'Status': <SensorType.Out: 1>, 'RSSI': -34}
+04/25/2019 11:40:50	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 47, 5596), 'Status': <SensorType.Out: 1>, 'RSSI': -32}
+04/25/2019 11:40:50	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 46, 427564), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:52	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 49, 338485), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:53	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 52, 802275), 'Status': <SensorType.In: 0>, 'RSSI': -34}
+04/25/2019 11:40:53	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 52, 228191), 'Status': <SensorType.In: 0>, 'RSSI': -32}
+04/25/2019 11:40:53	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 51, 655702), 'Status': <SensorType.In: 0>, 'RSSI': -34}
+04/25/2019 11:40:53	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 51, 66699), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:53	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 50, 503736), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:40:53	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 49, 900154), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:40:57	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 53, 987447), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:40:57	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 53, 987361), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:40:57	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 53, 368569), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:41:01	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 56, 862322), 'Status': <SensorType.Out: 1>, 'RSSI': -34}
+04/25/2019 11:41:03	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 56, 282836), 'Status': <SensorType.Out: 1>, 'RSSI': -36}
+04/25/2019 11:41:06	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 55, 159133), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:41:06	read tag: {'EPC': 'E20035636BBBD830E6B23760', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 55, 159093), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -36}
+04/25/2019 11:41:06	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 55, 159050), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -27}
+04/25/2019 11:41:06	read tag: {'EPC': 'E20035636BBBD830E6B23760', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 54, 565505), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:41:06	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 54, 565458), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -18}
+04/25/2019 11:41:11	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 40, 57, 466930), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:41:17	read tag: {'EPC': 'E20035636BBBD830E6B23760', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 41, 6, 471008), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -25}
+04/25/2019 11:41:21	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 41, 6, 470894), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/25/2019 11:43:58	received message 'check_status'
+04/25/2019 11:44:21	received message 'check_status'
+04/25/2019 11:47:45	received message 'stop_logging'
+04/25/2019 11:47:46	current node status: online
+04/25/2019 11:48:04	received message 'check_status'
+04/25/2019 11:48:32	received message 'start_logging'
+04/25/2019 11:48:40	current node status: logging
+04/25/2019 11:49:12	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 49, 5, 774417), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 11:49:38	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 49, 32, 102569), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/25/2019 11:49:47	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 49, 32, 677183), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -27}
+04/25/2019 11:54:20	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 11, 54, 15, 811580), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34}
+04/25/2019 12:10:13	received message 'stop_logging'
+04/25/2019 12:10:13	read tag: {'EPC': 'E20035636BBBD830E6B23760', 'Timestamp': datetime.datetime(2019, 4, 25, 12, 10, 12, 733763), 'Status': <SensorType.Out: 1>, 'RSSI': -43}
+04/25/2019 12:10:13	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 12, 10, 12, 733715), 'Status': <SensorType.Out: 1>, 'RSSI': -48}
+04/25/2019 12:10:13	read tag: {'EPC': 'E20035636BBBD830E6B23760', 'Timestamp': datetime.datetime(2019, 4, 25, 12, 10, 12, 150434), 'Status': <SensorType.Out: 1>, 'RSSI': -41}
+04/25/2019 12:10:13	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 12, 10, 12, 150388), 'Status': <SensorType.Out: 1>, 'RSSI': -41}
+04/25/2019 12:10:13	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 12, 10, 11, 563552), 'Status': <SensorType.Out: 1>, 'RSSI': -41}
+04/25/2019 12:10:13	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 12, 10, 10, 988117), 'Status': <SensorType.Out: 1>, 'RSSI': -43}
+04/25/2019 12:10:13	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 12, 10, 10, 416856), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -41}
+04/25/2019 12:10:13	read tag: {'EPC': 'E20035636BBBD830E6B23760', 'Timestamp': datetime.datetime(2019, 4, 25, 12, 10, 10, 416807), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -41}
+04/25/2019 12:10:13	read tag: {'EPC': 'E20035636BC2FF30E6B253FC', 'Timestamp': datetime.datetime(2019, 4, 25, 12, 10, 9, 834650), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -43}
+04/25/2019 12:10:13	current node status: online
