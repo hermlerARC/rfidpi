@@ -69,21 +69,21 @@ class CommandReader:
         self.Stop()
       elif first_command == CommandReader.Command.SPREADSHEET:
         spreadsheet_command = self.__get_spreadsheet_command(next(commands, ""))
-
-        if spreadsheet_command == Command.CHANGE_SHEET:
+        
+        if spreadsheet_command == CommandReader.Command.CHANGE_SHEET:
           if not self.__handler.ChangeSpreadsheet():
             self.__print_error(f"Invalid spreadsheet ID: '{new_spreadsheetID}'")
-        elif spreadsheet_command == Command.UPDATE_SHEET:
-          update_type = next(commands, default="-a")
+        elif spreadsheet_command == CommandReader.Command.UPDATE_SHEET:
+          update_type = next(commands, "-a")
           
           if update_type == '-a' or update_type == '-w' or update_type == '-x':
             self.__handler.UpdateSheets(log_mode=update_type[1:])
           else:
             self.__print_error(f"Invalid update type: {update_type}")
-        elif spreadsheet_command == Command.LOAD_SHEET:
+        elif spreadsheet_command == CommandReader.Command.LOAD_SHEET:
           if input('You might have unsaved data. Are you sure you want to overwrite? (y/n)').upper() == 'Y':
             self.__handler.LoadSpreadsheet()
-        elif spreadsheet_command == Command.SET_INTERVAL:
+        elif spreadsheet_command == CommandReader.Command.SET_INTERVAL:
           interval_speed = next(commands, default=0)
           if interval_speed.isdigit() and int(interval_speed) > 0:
             self.__handler.ChangeUpdateInterval(interval_speed)

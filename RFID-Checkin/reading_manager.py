@@ -38,31 +38,25 @@ class TimeRange:
     return "[{},{}]".format(self.StartTime, self.EndTime)
 
 class ReadingManager:
-  def __init__(self, reader, sensor_manager):
+  def __init__(self, reader, laser_manager):
     self.__THRESHOLD_TIME = 3
 
     self.__reader = reader
-    self.__sensor_manager = sensor_manager
+    self.__laser_manager = laser_manager
     self.__running = False
 
     self.__tag_stream = []
     self.__tag_stream_lock = threading.Lock()
-    self.__sensor_reading = None
 
-  def BeginReading(self, callback, sensor_threshold = 300, testing = False):
+  def BeginReading(self, callback, testing = False):
     if hasattr(callback, '__call__'):
-      if isinstance(sensor_threshold, int) and sensor_threshold > 0:
-        self.__sensor_threshold = sensor_threshold
-
         self.__running = True
         self.__run_sender(callback)
         print('setup sender')
         self.__run_reader(testing)
         print('setup reader')
-        self.__run_sensors()
+        self.__run_lasers()
         print('setup sensors')
-      else:
-        raise ValueError("Sensor threshold must be an int that's greater than 0")
     else:
       raise ValueError('Must specify callback function')
 
@@ -84,6 +78,7 @@ class ReadingManager:
 
         self.__tag_stream_lock.acquire()
         for i in range(len(self.__tag_stream)-1, -1, -1):
+          if
           if (curr_time - self.__tag_stream[i].Timestamp).total_seconds() > self.__THRESHOLD_TIME or self.__tag_stream[i].Status != TagStatus.Unknown:
             for j in range(i, -1, -1):
               callback(self.__tag_stream[j])
@@ -106,24 +101,35 @@ class ReadingManager:
           
     threading.Thread(target=start_reading).start()
 
-  def __run_sensors(self):
-    def receive_reading(sensor_reading):
-      if sensor_reading.Reading <= self.__sensor_threshold:
-        if self.__sensor_reading == None:
-          self.__sensor_manager.PauseSensor(sensor_reading.SensorType)
-          self.__sensor_reading = sensor_reading
-        elif (datetime.datetime.now() - self.__sensor_reading.Timestamp).total_seconds() > self.__THRESHOLD_TIME:
-          self.__sensor_manager.UnpauseSensor(sensor_reading.SensorType.Opposite)
-          self.__sensor_manager.PauseSensor(sensor_reading.SensorType)
-          self.__sensor_reading = sensor_reading
-        else:
-          time_of_walk = TimeRange(self.__sensor_reading.Timestamp, sensor_reading.Timestamp)
+  def __run_lasers(self):
+    while self.__running:
+      in_val = self.__laser_manager.InLaser.Value
+      out_val = self.__laser_manager.OutLaser.Value
 
-          self.__tag_stream_lock.acquire()
-          for i in range(len(self.__tag_stream)-1, -1, -1):
-            if time_of_walk.Contains(self.__tag_stream[i].Timestamp):
-              self.__tag_stream[i].Status = sensor_reading.SensorType
-          self.__tag_stream_lock.release()
+      ts = datetime.datetime.now()
 
-          self.__sensor_manager.UnpauseSensor(sensor_reading.SensorType.Opposite)
-    self.__sensor_manager.RunSensors(receive_reading)
+      if not in_val and out_val:
+        while (datetime.datetime.now() - ts).total_seconds() < 3:
+          if not self.__laser_manager.OutLaser.Value:
+            time_of_walk = TimeRange(ts - datetime.timedelta(seconds=2), datetime.datetime.now() + datetime.timedelta(seconds=2))
+
+            self.__tag_stream_lock.acquire()
+            for i in range(len(self.__tag_stream)-1, -1, -1):
+              if time_of_walk.Contains(self.__tag_stream[i].Timestamp):
+                self.__tag_stream[i].Status = TagStatus.Out
+              else:
+                break
+            self.__tag_stream_lock.release()
+
+      if not out_val and in_val:
+        while (datetime.datetime.now() - ts).total_seconds() < 3:
+          if not self.__laser_manager.InLaser.Value:
+            time_of_walk = TimeRange(ts - datetime.timedelta(seconds=2), datetime.datetime.now() + datetime.timedelta(seconds=2))
+
+            self.__tag_stream_lock.acquire()
+            for i in range(len(self.__tag_stream)-1, -1, -1):
+              if time_of_walk.Contains(self.__tag_stream[i].Timestamp):
+                self.__tag_stream[i].Status = TagStatus.In
+              else:
+                break
+            self.__tag_stream_lock.release()

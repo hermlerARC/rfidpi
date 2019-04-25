@@ -126,13 +126,12 @@ class Node:
   def __on_message(self, client, data, msg):
     message_obj = pickle.loads(msg.payload)
     topic = Topic(msg.topic.split(sep='/')[2])
-
+    
     if topic == Topic.NODE_STATUS:
       self.__status = message_obj['BODY']
     elif topic == Topic.NODE_RESPONSE:
       self.__node_replies_lock.acquire()
       self.__node_replies.append(message_obj['BODY'])
-      print(f"added item {message_obj['BODY']}")
       self.__node_replies_lock.release()
     elif topic == Topic.TAG_READINGS:
       if self.__status == Status.LOGGING:

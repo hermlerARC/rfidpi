@@ -43,6 +43,10 @@ class Laser:
     def Opposite(self):
         return Laser.Type.In if self.__type == Laser.Type.Out else Laser.Type.In
     
+    @property
+    def Value(self):
+        return GPIO.input(self.__pin)
+
     def Start(self, callback):
         if self.__status == Laser.Status.Stopped:
             GPIO.setup(self.__pin, GPIO.IN)
@@ -65,7 +69,7 @@ class Laser:
     def __run(self):
         while True:
             if self.__status == Laser.Status.Running and not GPIO.input(self.__pin) and hasattr(self.__callback, '__call__'):
-                callback(self.__type, datetime.datetime.now())
+                callback(self.__type)
             elif self.__status == Laser.Status.Paused:
                 continue
             elif self.__status == Laser.Status.Stopped:
@@ -80,16 +84,18 @@ class LaserManager:
     def StartLasers(self, callback):
         if not self.__running:
             GPIO.setmode(GPIO.BOARD)
-            self.__lasers = [Laser(Laser.Type.In), Laser(Laser.Type.Out)]
-            
-            self.__running = True
-            for laser in self.__lasers:
-                laser.Start(callback)
-    @property      
-    def Lasers(self):
-        return self.__lasers
+            self.__in_laser = Laser(Laser.Type.In)
+            self.__out_laser = Laser(Laser.Type.Out)
+
+    @property
+    def InLaser(self):
+        return self.__in_laser
+
+    @property
+    def OutLaser(self):
+        return self.__out_laser
     
     def StopLasers(self):
-        for laser in self.__lasers:
-            laser.Stop()
+        self.__in_laser.Stop()
+        self.__out_laser.Stop()
         GPIO.cleanup()

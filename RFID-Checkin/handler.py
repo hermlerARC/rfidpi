@@ -193,9 +193,9 @@ class Handler:
     log_vals = []
 
     if log_mode == 'a':
-      log_vals = [[l.Timestamp.strftime(DATETIME_FORMAT), str(l.Status), l.EPC, l.Owner, l.Description, l.Location, l.Extra] for l in self.__new_logs]
+      log_vals = [[l.Timestamp.strftime(self.__DATETIME_FORMAT), l.EPC, str(l.Status), l.Owner, l.Description, l.Location, l.Extra] for l in self.__new_logs]
     elif log_mode == 'w':
-      log_vals = [[l.Timestamp.strftime(DATETIME_FORMAT), str(l.Status), l.EPC, l.Owner, l.Description, l.Location, l.Extra] for l in self.GetLogsFile()]
+      log_vals = [[l.Timestamp.strftime(self.__DATETIME_FORMAT), l.EPC, str(l.Status), l.Owner, l.Description, l.Location, l.Extra] for l in self.GetLogsFile()]
     
     # Tell GSheets that we want to it to post our data by column
     node_resource = {
@@ -309,18 +309,19 @@ class Handler:
        }
     """
 
+
     try:
       index = self.__rfidtags.index(next((tag for tag in self.__rfidtags if tag.EPC == log['BODY']['EPC']), None))
     except ValueError:
       return
 
-    self.__rfidtags[index].Status = log['BODY']['STATUS']
+    self.__rfidtags[index].Status = RFIDTag.Status(log['BODY']['Status'].value)
     self.__rfidtags[index].LastLocation = location
 
     curr_tag = self.__rfidtags[index]
-    new_log = Log(log['TIMESTAMP'], curr_tag.EPC, curr_tag.Status, curr_tag.Owner,
+    new_log = Log(log['TIMESTAMP'], curr_tag.EPC, Log.Status(curr_tag.Status.value), curr_tag.Owner,
                   curr_tag.Description, location, curr_tag.Extra)
-
+                  
     self.__new_logs.append(new_log)
     self.AddLogs(new_log)
     self.SaveSettingsFile()
