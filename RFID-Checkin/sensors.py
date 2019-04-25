@@ -37,7 +37,7 @@ class Laser:
         elif type == Laser.Type.Out:
             self.__pin = Laser.__OUT_PIN
             
-        self.__status = Laser.Status.Stopped
+        GPIO.setup(self.__pin, GPIO.IN)
         
     @property
     def Opposite(self):
@@ -46,46 +46,13 @@ class Laser:
     @property
     def Value(self):
         return GPIO.input(self.__pin)
-
-    def Start(self, callback):
-        if self.__status == Laser.Status.Stopped:
-            GPIO.setup(self.__pin, GPIO.IN)
-            self.__callback = callback
-            self.__status = Laser.Status.Running
-            
-            threading.Thread(target=self.__run).start()
-            
-    def Pause(self):
-        if self.__status == Laser.Status.Running:
-            self.__status = Laser.Status.Paused
-            
-    def Unpause(self):
-        if self.__status == Laser.Status.Paused:
-            self.__status = Laser.Status.Running
-            
-    def Stop(self):
-        self.__status = Laser.Status.Stopped
-        
-    def __run(self):
-        while True:
-            if self.__status == Laser.Status.Running and not GPIO.input(self.__pin) and hasattr(self.__callback, '__call__'):
-                callback(self.__type)
-            elif self.__status == Laser.Status.Paused:
-                continue
-            elif self.__status == Laser.Status.Stopped:
-                break
-            
             
 class LaserManager:
     def __init__(self):
         self.__running = False
-        self.__lasers = []
-        
-    def StartLasers(self, callback):
-        if not self.__running:
-            GPIO.setmode(GPIO.BOARD)
-            self.__in_laser = Laser(Laser.Type.In)
-            self.__out_laser = Laser(Laser.Type.Out)
+        GPIO.setmode(GPIO.BOARD)
+        self.__in_laser = Laser(Laser.Type.In)
+        self.__out_laser = Laser(Laser.Type.Out)
 
     @property
     def InLaser(self):
@@ -96,6 +63,4 @@ class LaserManager:
         return self.__out_laser
     
     def StopLasers(self):
-        self.__in_laser.Stop()
-        self.__out_laser.Stop()
         GPIO.cleanup()

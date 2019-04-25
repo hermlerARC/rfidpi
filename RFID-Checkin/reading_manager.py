@@ -17,6 +17,11 @@ from sensors import *
 from tag import *
 from node_enums import Status
 
+class Direction:
+    def __init__(self, status, time_range):
+        self.Status = status
+        self.TimeRange = time_range
+
 class TimeRange:
   def __init__(self, start_time, end_time):
     if isinstance(start_time, datetime.datetime) and isinstance(end_time, datetime.datetime):
@@ -62,7 +67,7 @@ class ReadingManager:
 
   def StopReading(self):
     self.__running = False
-    self.__sensor_manager.StopSensors()
+    self.__laser_manager.StopLasers()
     self.__tag_stream_lock.acquire()
     self.__tag_stream.clear()
     self.__tag_stream_lock.release()
@@ -78,7 +83,6 @@ class ReadingManager:
 
         self.__tag_stream_lock.acquire()
         for i in range(len(self.__tag_stream)-1, -1, -1):
-          if
           if (curr_time - self.__tag_stream[i].Timestamp).total_seconds() > self.__THRESHOLD_TIME or self.__tag_stream[i].Status != TagStatus.Unknown:
             for j in range(i, -1, -1):
               callback(self.__tag_stream[j])
@@ -102,34 +106,43 @@ class ReadingManager:
     threading.Thread(target=start_reading).start()
 
   def __run_lasers(self):
-    while self.__running:
-      in_val = self.__laser_manager.InLaser.Value
-      out_val = self.__laser_manager.OutLaser.Value
+    def run():
+        while self.__running:
+          in_val = self.__laser_manager.InLaser.Value
+          out_val = self.__laser_manager.OutLaser.Value
 
-      ts = datetime.datetime.now()
+          ts = datetime.datetime.now()
 
-      if not in_val and out_val:
-        while (datetime.datetime.now() - ts).total_seconds() < 3:
-          if not self.__laser_manager.OutLaser.Value:
-            time_of_walk = TimeRange(ts - datetime.timedelta(seconds=2), datetime.datetime.now() + datetime.timedelta(seconds=2))
-
-            self.__tag_stream_lock.acquire()
-            for i in range(len(self.__tag_stream)-1, -1, -1):
-              if time_of_walk.Contains(self.__tag_stream[i].Timestamp):
-                self.__tag_stream[i].Status = TagStatus.Out
-              else:
+          if not in_val and out_val:
+            while (datetime.datetime.now() - ts).total_seconds() < 3:
+              if not self.__laser_manager.OutLaser.Value:
+                time_of_walk = TimeRange(ts - datetime.timedelta(seconds=2), datetime.datetime.now() + datetime.timedelta(seconds=2))
+                
+                self.__tag_stream_lock.acquire()
+                for i in range(len(self.__tag_stream)-1, -1, -1):
+                  if time_of_walk.Contains(self.__tag_stream[i].Timestamp):
+                    self.__tag_stream[i].Status = TagStatus.Out
+                  else:
+                    break
+                self.__tag_stream_lock.release()
+                
+                time.sleep(0.5)
                 break
-            self.__tag_stream_lock.release()
 
-      if not out_val and in_val:
-        while (datetime.datetime.now() - ts).total_seconds() < 3:
-          if not self.__laser_manager.InLaser.Value:
-            time_of_walk = TimeRange(ts - datetime.timedelta(seconds=2), datetime.datetime.now() + datetime.timedelta(seconds=2))
-
-            self.__tag_stream_lock.acquire()
-            for i in range(len(self.__tag_stream)-1, -1, -1):
-              if time_of_walk.Contains(self.__tag_stream[i].Timestamp):
-                self.__tag_stream[i].Status = TagStatus.In
-              else:
+          if not out_val and in_val:
+            while (datetime.datetime.now() - ts).total_seconds() < 3:
+              if not self.__laser_manager.InLaser.Value:
+                time_of_walk = TimeRange(ts - datetime.timedelta(seconds=2), datetime.datetime.now() + datetime.timedelta(seconds=2))
+                print('heading out')
+                self.__tag_stream_lock.acquire()
+                for i in range(len(self.__tag_stream)-1, -1, -1):
+                  if time_of_walk.Contains(self.__tag_stream[i].Timestamp):
+                    self.__tag_stream[i].Status = TagStatus.In
+                  else:
+                    break
+                self.__tag_stream_lock.release()
+                
+                time.sleep(0.5)
                 break
-            self.__tag_stream_lock.release()
+            
+    threading.Thread(target=run).start()

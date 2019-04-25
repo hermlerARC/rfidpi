@@ -200,9 +200,7 @@ class ManagerWrapper:
       LF.write(ft_msg + '\n')
 
   def __log_tag(self, tag):
-    print('called')
     self.__send_message(Topic.TAG_READINGS, tag.__dict__)
-    print('sending tag')
     self.__print_out('read tag: {}'.format(tag.__dict__))
 
   def __log_sensor_reading(self, sensor_reading):
