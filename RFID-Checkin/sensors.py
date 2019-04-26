@@ -64,3 +64,4 @@ class LaserManager:
     
     def StopLasers(self):
         GPIO.cleanup()
+  
