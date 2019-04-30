@@ -54,10 +54,8 @@ def connect_to_reader(path = READER_PATH, max_port = 10):
 class ManagerWrapper:
   def __init__(self, reader):
     self.__print_out("connected to reader on '{}'".format(conn_path))
-    self.__laser_man = LaserManager()
-    self.__print_out("created sensor manager")
 
-    self.__reading_man = ReadingManager(reader, self.__laser_man)
+    self.__reading_man = ReadingManager(reader)
     self.__print_out("created reading manager")
     self.__status = Status.ONLINE
 
@@ -75,7 +73,6 @@ class ManagerWrapper:
   #region Manager Handling
   def BeginLogging(self, callback):
     self.__check_availability()
-
     self.__reading_man.BeginReading(callback)
     self.__update_status(Status.LOGGING)
 
@@ -149,7 +146,9 @@ class ManagerWrapper:
   def __send_message(self, topic, message):
     if isinstance(topic, Topic):
       message_obj = {'TIMESTAMP' : datetime.datetime.now(), 'ID' : RASPI_ID, 'BODY' : message}
+      print('sending to reader/{}/{}'.format(RASPI_ID, topic.value))
       self.__client.publish('reader/{}/{}'.format(RASPI_ID, topic.value), pickle.dumps(message_obj), qos=1)
+      print('sent')
     else:
       raise ValueError("'topic' argument must be an instance of Topic")
   #endregion

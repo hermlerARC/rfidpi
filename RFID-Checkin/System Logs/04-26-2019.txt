@@ -1,0 +1,167 @@
+04/26/2019 11:01:59	connected to reader on 'tmr:///dev/ttyUSB1'
+04/26/2019 11:01:59	created sensor manager
+04/26/2019 11:01:59	created reading manager
+04/26/2019 11:02:00	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:02:05	received message 'start_logging'
+04/26/2019 11:02:11	current node status: logging
+04/26/2019 11:12:09	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:12:09	created sensor manager
+04/26/2019 11:12:09	created reading manager
+04/26/2019 11:12:09	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:12:15	received message 'start_logging'
+04/26/2019 11:12:20	current node status: logging
+04/26/2019 11:12:25	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 12, 21, 501363), 'RSSI': -39, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:12:25	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 12, 20, 930470), 'RSSI': -39, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:12:26	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 12, 22, 685876), 'RSSI': -39, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:12:26	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 12, 22, 103606), 'RSSI': -39, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:12:29	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 12, 25, 30347), 'RSSI': -39, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:12:32	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 12, 24, 414050), 'RSSI': -36, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:12:36	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 12, 23, 838852), 'RSSI': -36, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:12:44	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 12, 23, 260961), 'RSSI': -32, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:12:53	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 12, 26, 749802), 'RSSI': -39, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:12:55	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 12, 25, 596392), 'RSSI': -39, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:13:08	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 13, 4, 846267), 'RSSI': -41, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:13:09	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 13, 5, 996607), 'RSSI': -27, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:13:09	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 13, 5, 415819), 'RSSI': -39, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:13:10	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 13, 7, 717628), 'RSSI': -36, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:13:10	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 13, 7, 152975), 'RSSI': -32, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:13:10	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 13, 6, 567323), 'RSSI': -23, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:13:12	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 13, 8, 885538), 'RSSI': -36, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:13:12	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 13, 8, 313680), 'RSSI': -34, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:13:13	read tag: {'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 13, 10, 163458), 'RSSI': -36, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:24:16	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:24:16	created sensor manager
+04/26/2019 11:24:16	created reading manager
+04/26/2019 11:24:17	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:24:22	received message 'start_logging'
+04/26/2019 11:24:27	current node status: logging
+04/26/2019 11:24:36	read tag: {'Status': <TagStatus.Unknown: 2>, 'RSSI': -34, 'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 24, 32, 241514)}
+04/26/2019 11:24:41	read tag: {'Status': <TagStatus.Unknown: 2>, 'RSSI': -41, 'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 24, 36, 806988)}
+04/26/2019 11:24:44	read tag: {'Status': <TagStatus.Unknown: 2>, 'RSSI': -30, 'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 24, 39, 121719)}
+04/26/2019 11:24:48	read tag: {'Status': <TagStatus.Unknown: 2>, 'RSSI': -16, 'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 24, 38, 547194)}
+04/26/2019 11:24:52	read tag: {'Status': <TagStatus.Unknown: 2>, 'RSSI': -27, 'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 24, 37, 966607)}
+04/26/2019 11:24:55	read tag: {'Status': <TagStatus.Unknown: 2>, 'RSSI': -36, 'EPC': 'E20035636B938EF0E6B1963B', 'Timestamp': datetime.datetime(2019, 4, 26, 11, 24, 37, 390972)}
+04/26/2019 11:24:55	current node status: online
+04/26/2019 11:26:04	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:26:04	created sensor manager
+04/26/2019 11:26:04	created reading manager
+04/26/2019 11:26:05	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:26:13	received message 'start_logging'
+04/26/2019 11:26:46	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 26, 42, 447728), 'RSSI': -36, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:26:30	current node status: logging
+04/26/2019 11:26:48	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 26, 44, 530730), 'RSSI': -39, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:26:50	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 26, 46, 606280), 'RSSI': -16, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:27:05	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 26, 48, 717499), 'RSSI': -39, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:27:09	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 26, 50, 814429), 'RSSI': -36, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:27:11	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 27, 7, 319560), 'RSSI': -43, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:27:48	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:27:48	created sensor manager
+04/26/2019 11:27:48	created reading manager
+04/26/2019 11:27:48	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:27:55	received message 'start_logging'
+04/26/2019 11:28:05	current node status: logging
+04/26/2019 11:29:22	read tag: {'Status': <TagStatus.Unknown: 2>, 'Timestamp': datetime.datetime(2019, 4, 26, 11, 29, 18, 139755), 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -39}
+04/26/2019 11:29:26	read tag: {'Status': <TagStatus.Unknown: 2>, 'Timestamp': datetime.datetime(2019, 4, 26, 11, 29, 22, 321878), 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -27}
+04/26/2019 11:29:26	read tag: {'Status': <TagStatus.Unknown: 2>, 'Timestamp': datetime.datetime(2019, 4, 26, 11, 29, 20, 212258), 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -41}
+04/26/2019 11:29:32	read tag: {'Status': <TagStatus.Unknown: 2>, 'Timestamp': datetime.datetime(2019, 4, 26, 11, 29, 26, 531353), 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -41}
+04/26/2019 11:31:27	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:31:27	created sensor manager
+04/26/2019 11:31:27	created reading manager
+04/26/2019 11:31:28	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:31:33	received message 'start_logging'
+04/26/2019 11:31:57	current node status: logging
+04/26/2019 11:32:28	current node status: online
+04/26/2019 11:33:11	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:33:11	created sensor manager
+04/26/2019 11:33:11	created reading manager
+04/26/2019 11:33:11	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:33:17	received message 'start_logging'
+04/26/2019 11:33:34	current node status: logging
+04/26/2019 11:36:49	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:36:49	created sensor manager
+04/26/2019 11:36:49	created reading manager
+04/26/2019 11:36:50	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:36:56	received message 'start_logging'
+04/26/2019 11:37:03	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 36, 59, 26823), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30, 'EPC': 'E20035636B938EF0E6B1963B'}
+04/26/2019 11:37:03	current node status: logging
+04/26/2019 11:37:07	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 37, 3, 225264), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -23, 'EPC': 'E20035636B938EF0E6B1963B'}
+04/26/2019 11:37:07	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 37, 1, 104242), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -25, 'EPC': 'E20035636B938EF0E6B1963B'}
+04/26/2019 11:37:11	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 37, 5, 292167), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -34, 'EPC': 'E20035636B938EF0E6B1963B'}
+04/26/2019 11:37:21	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 37, 7, 529310), 'Status': <TagStatus.Unknown: 2>, 'RSSI': -36, 'EPC': 'E20035636B938EF0E6B1963B'}
+04/26/2019 11:39:47	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:39:47	created sensor manager
+04/26/2019 11:39:47	created reading manager
+04/26/2019 11:39:48	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:39:57	received message 'start_logging'
+04/26/2019 11:40:03	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 39, 59, 571117), 'EPC': 'E20035636B984F70E6B1A93D', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -30}
+04/26/2019 11:40:05	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 40, 1, 647154), 'EPC': 'E20035636B984F70E6B1A93D', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -25}
+04/26/2019 11:40:07	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 40, 3, 729279), 'EPC': 'E20035636B984F70E6B1A93D', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -25}
+04/26/2019 11:40:12	current node status: logging
+04/26/2019 11:40:12	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 40, 7, 895469), 'EPC': 'E20035636B984F70E6B1A93D', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -25}
+04/26/2019 11:40:30	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 40, 5, 806482), 'EPC': 'E20035636B984F70E6B1A93D', 'Status': <TagStatus.Unknown: 2>, 'RSSI': -32}
+04/26/2019 11:41:34	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:41:34	created sensor manager
+04/26/2019 11:41:34	created reading manager
+04/26/2019 11:41:35	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:41:45	received message 'start_logging'
+04/26/2019 11:42:02	current node status: logging
+04/26/2019 11:48:52	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:48:52	created sensor manager
+04/26/2019 11:48:52	created reading manager
+04/26/2019 11:48:52	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:48:59	received message 'start_logging'
+04/26/2019 11:48:59	current node status: logging
+04/26/2019 11:49:11	current node status: online
+04/26/2019 11:50:08	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:50:08	created sensor manager
+04/26/2019 11:50:08	created reading manager
+04/26/2019 11:50:09	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:50:16	received message 'start_logging'
+04/26/2019 11:50:16	current node status: logging
+04/26/2019 11:50:54	current node status: online
+04/26/2019 11:51:10	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:51:10	created sensor manager
+04/26/2019 11:51:10	created reading manager
+04/26/2019 11:51:10	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:51:14	received message 'start_logging'
+04/26/2019 11:51:14	current node status: logging
+04/26/2019 11:51:30	current node status: online
+04/26/2019 11:52:34	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:52:34	created sensor manager
+04/26/2019 11:52:34	created reading manager
+04/26/2019 11:52:34	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:52:38	received message 'start_logging'
+04/26/2019 11:52:44	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 52, 41, 73006), 'RSSI': -36, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:52:43	current node status: logging
+04/26/2019 11:52:46	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 52, 43, 214496), 'RSSI': -36, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:52:48	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 52, 42, 147842), 'RSSI': -41, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:52:50	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 52, 45, 354598), 'RSSI': -36, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:52:50	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 52, 44, 291342), 'RSSI': -23, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:52:51	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 52, 48, 609690), 'RSSI': -30, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:52:55	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 52, 50, 785431), 'RSSI': -30, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:53:03	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 52, 52, 988207), 'RSSI': -30, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:53:08	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 52, 51, 908183), 'RSSI': -30, 'EPC': 'E20035636B938EF0E6B1963B', 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:53:08	current node status: online
+04/26/2019 11:53:50	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:53:50	created sensor manager
+04/26/2019 11:53:50	created reading manager
+04/26/2019 11:53:51	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:53:55	received message 'start_logging'
+04/26/2019 11:54:02	current node status: logging
+04/26/2019 11:54:08	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 54, 2, 12125), 'RSSI': -34, 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636B938EF0E6B1963B'}
+04/26/2019 11:54:18	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 54, 12, 334754), 'RSSI': -34, 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636B938EF0E6B1963B'}
+04/26/2019 11:54:52	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:54:52	created sensor manager
+04/26/2019 11:54:52	created reading manager
+04/26/2019 11:54:52	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:54:57	received message 'start_logging'
+04/26/2019 11:54:59	current node status: logging
+04/26/2019 11:55:14	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 55, 1, 814643), 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -36, 'Status': <TagStatus.Unknown: 2>}
+04/26/2019 11:55:28	current node status: online
+04/26/2019 11:56:17	connected to reader on 'tmr:///dev/ttyUSB0'
+04/26/2019 11:56:17	created sensor manager
+04/26/2019 11:56:17	created reading manager
+04/26/2019 11:56:17	connected to MQTT client on 'reader/UPOGDU/command'
+04/26/2019 11:56:21	received message 'start_logging'
+04/26/2019 11:56:30	current node status: logging
+04/26/2019 11:56:36	read tag: {'Timestamp': datetime.datetime(2019, 4, 26, 11, 56, 32, 102656), 'Status': <TagStatus.Unknown: 2>, 'EPC': 'E20035636B938EF0E6B1963B', 'RSSI': -39}
