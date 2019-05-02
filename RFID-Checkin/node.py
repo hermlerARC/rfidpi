@@ -1,8 +1,9 @@
-import enum, threading, datetime, pickle
+import enum, threading, datetime, pickle, pathlib
 from node_enums import *
 from paho.mqtt import client
 
 class Node:
+  __LOG_FILE = f'Node Logs/{self.ID}/'
   __DICT_VALUES = ['ID', 'Location', 'ErrorCallback', 'LoggingCallback', 'ReadOnceCallback', 'SensorTestingCallback', 'ReaderTestingCallback']
   __CONNECTIVITY_TIMEOUT = 2
   __MAX_CONNECTION_ATTEMPTS = 5
@@ -105,9 +106,13 @@ class Node:
     
     while not (received_response or self.__closing) and (datetime.datetime.now() - start_time).total_seconds() <= timeout:
       self.__node_replies_lock.acquire()
-      if expected_response in self.__node_replies:
-        self.__node_replies.remove(expected_response)
+      try:
+        ind = [[x['ID'], x['BODY']] for x in self.__node_replies].index([self.ID, expected_response])
+        print(ind)
+        self.__node_replies.pop(ind)
         received_response = True
+      except:
+        pass
       self.__node_replies_lock.release()
     
     if received_response:
@@ -115,15 +120,27 @@ class Node:
     return received_response
 
   def __on_connect(self, client, data, flags, rc):
-    client.subscribe(f'reader/{self.__id}/{Topic.NODE_STATUS}', 1) 
-    client.subscribe(f'reader/{self.__id}/{Topic.NODE_RESPONSE}', 1) 
-    client.subscribe(f'reader/{self.__id}/{Topic.TAG_READINGS}', 1) 
-    client.subscribe(f'reader/{self.__id}/{Topic.SENSOR_READINGS}', 1)
-    client.subscribe(f'reader/{self.__id}/{Topic.ERROR_CODES}', 1)
+    client.subscribe(f'reader/{self.ID}/{Topic.NODE_STATUS}', 1) 
+    client.subscribe(f'reader/{self.ID}/{Topic.NODE_RESPONSE}', 1) 
+    client.subscribe(f'reader/{self.ID}/{Topic.TAG_READINGS}', 1) 
+    client.subscribe(f'reader/{self.ID}/{Topic.SENSOR_READINGS}', 1)
+    client.subscribe(f'reader/{self.ID}/{Topic.ERROR_CODES}', 1)
+    client.subscribe(f'reader/{self.ID}/{Topic.NODE_LOG}'), 1
 
     self.CheckStatus()
 
   def __on_message(self, client, data, msg):
+    """
+    Receives messages from nodes over MQTT. 
+
+    msg payloads are formatted as follows:\n
+    {
+      'TIMESTAMP' : [date when message was sent],
+      'ID' : [node ID],
+      'BODY' : [data being sent]
+    }
+    """
+
     message_obj = pickle.loads(msg.payload)
     topic = Topic(msg.topic.split(sep='/')[2])
     
@@ -131,7 +148,7 @@ class Node:
       self.__status = message_obj['BODY']
     elif topic == Topic.NODE_RESPONSE:
       self.__node_replies_lock.acquire()
-      self.__node_replies.append(message_obj['BODY'])
+      self.__node_replies.append(message_obj)
       self.__node_replies_lock.release()
     elif topic == Topic.TAG_READINGS:
       if self.__status == Status.LOGGING:
@@ -145,3 +162,8 @@ class Node:
       self.__sensor_callback(message_obj)
     elif topic == Topic.ERROR_CODES:
       self.__error_callback(message_obj)
+    elif topic == Topic.NODE_LOG:
+      pathlib.Path(self.__LOG_FILE).mkdir(parents=True, exist_ok=True)
+      
+      with open(message_obj['BODY']['Name'], 'w') as LF:
+        LF.write(message_obj['BODY']['Logs'])

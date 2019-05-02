@@ -1,7 +1,5 @@
-from node_enums import *
-import pickle, datetime
-from paho.mqtt import client
-
+import re
+from paho.mqtt import publish
 
 class ActionLawsuit:
   def __init__(self, title, owner):
@@ -12,9 +10,5 @@ class ActionLawsuit:
   def Title(self):
     return self.__title
 
-als = [ ["dom", 'jackson'], ['das', 'hehe'], ['yup', 'nope']]
-
-alr = [ActionLawsuit(a[0],a[1]) for a in als][0:]
-
-for i in range(10, 0, -1):
-  print(i)
+publish.single("reader/UPOGDU/response", payload="works!", qos=1, hostname="broker.mqttdashboard.com",
+    port=8000, transport="websockets")

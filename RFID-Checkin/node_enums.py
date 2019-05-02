@@ -33,6 +33,7 @@ class Topic(enum.Enum):
   TAG_READINGS = "tag"
   SENSOR_READINGS = "sensor"
   ERROR_CODES = 'errors'
+  NODE_LOG = 'logs'
 
   def __str__(self):
     return self.value

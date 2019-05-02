@@ -35,7 +35,7 @@ class Handler:
     self.__SERVICE_ACC_FILE = "data/service_account.json"
 
     self.__DATETIME_FORMAT = "%m/%d/%Y %H:%M:%S"
-
+    
     self.__spreadsheetID = ""
 
     self.__nodes = []
@@ -188,7 +188,7 @@ class Handler:
     #   ....
     # ]
 
-    node_vals = [[n.ID, n.Location, str(n.Status)] for n in self.__nodes]
+    node_vals = [[n.ID, n.Location, n.Status.value] for n in self.__nodes]
     rfid_tag_vals = [[r.EPC, str(r.Status), r.Owner, r.Description, r.LastLocation, r.Extra] for r in self.__rfidtags]
     log_vals = []
 
@@ -265,7 +265,6 @@ class Handler:
     self.__stop_automatic_sheet_update_service()
     self.SaveSettingsFile()
     self.UpdateSheets(log_mode='a')
-
     return
 
   def __google_login(self):

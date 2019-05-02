@@ -44,7 +44,7 @@ class Log:
         return
     else:
       if len(args) == 1 and ',' in args[0]:
-        self.__init__((*re.sub(r'(?<=,)\s', '', args[0]).split(',')))
+        self.__init__(*re.sub(r'(?<=,)\s', '', args[0]).split(','))
         return
       elif len(args) == 3 and isinstance(args[1], rfidtag.RFIDTag):
         self.__init__(args[0], args[1].EPC, args[1].Status.Value, args[1].Owner, args[1].Description, args[2], args[1].Extra)

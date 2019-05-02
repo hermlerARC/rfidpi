@@ -30,7 +30,7 @@ class RFIDTag:
         return
     else:
       if len(args) == 1 and ',' in args[0]:
-        self.__init__((*re.sub(r'(?<=,)\s', '', args[0]).split(',')))
+        self.__init__(*re.sub(r'(?<=,)\s', '', args[0]).split(','))
         return
       elif len(args) == len(RFIDTag.__DICT_VALUES):
         self.__init__(EPC=args[0], Status=args[1], Owner=args[2], Description=args[3], LastLocation=args[4], Extra=args[5])
