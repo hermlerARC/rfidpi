@@ -17,7 +17,7 @@ from paho.mqtt import publish, client as mqtt
 from reading_manager import ReadingManager
 from sensors import LaserManager
 from node_enums import *
-import pickle, mercury, datetime, pathlib
+import pickle, mercury, datetime, pathlib, time
 import RPi.GPIO as GPIO
 
 # Unique ID to differentiate between different systems that are connected to the UI Client
@@ -67,8 +67,9 @@ class ManagerWrapper:
 
     try:
       self.__client.loop_forever()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, SystemExit):
       self.Shutdown()
+      
 
   #region Manager Handling
   def BeginLogging(self, callback):
@@ -134,6 +135,8 @@ class ManagerWrapper:
         self.StopTesting()
       elif command == Command.CHECK_STATUS:
         self.__post_status()
+      elif command == Command.GET_LOGS:
+        self.SendSystemLogs()
     except NodeBusy as error:
       self.__post_error(command, error)
 
@@ -144,8 +147,7 @@ class ManagerWrapper:
   def __send_message(self, topic, message):
     if isinstance(topic, Topic):
       message_obj = {'TIMESTAMP' : datetime.datetime.now(), 'ID' : RASPI_ID, 'BODY' : message}
-      publish.single('reader/{}/{}'.format(RASPI_ID, topic.value), payload=pickle.dumps(message_obj), qos=1, hostname="broker.mqttdashboard.com",
-                     port=8000, transport="websockets")
+      publish.single('reader/{}/{}'.format(RASPI_ID, topic.value), payload=pickle.dumps(message_obj), qos=1, hostname="broker.mqttdashboard.com", port=8000, transport="websockets")
     else:
       raise ValueError("'topic' argument must be an instance of Topic")
   #endregion
@@ -154,8 +156,26 @@ class ManagerWrapper:
     self.StopLogging()
     self.StopTesting()
     self.StopSensors()
+    
+    self.__print_out('stopped all activity')
+    
+    self.SendSystemLogs()
+    self.__send_message(Topic.NODE_STATUS, Status.OFFLINE)
 
+    self.__print_out('sent logs to server')
+    self.__print_out('shutting down node {}'.format(RASPI_ID))
+    
+                                
     return self.Status
+
+  def SendSystemLogs(self):
+    log_data = ""
+    file_name = LOG_FILE.format(datetime.datetime.now().strftime('%m-%d-%Y'))
+    
+    with open(file_name, 'r') as LF:
+      log_data = LF.read()
+      
+    self.__send_message(Topic.NODE_LOG, { 'Name' : file_name.split(sep='/')[1], 'Logs' : log_data })
 
   @property
   def Status(self):
@@ -191,7 +211,7 @@ class ManagerWrapper:
 
     print(ft_msg)
     directory = LOG_FILE.split(sep='/')[0] + '/'
-    pathlib.Path(directory).mkdir(parents=True, exist_ok=True) 
+    pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
     with open(LOG_FILE.format(curr_time.strftime('%m-%d-%Y')), 'a') as LF:
       LF.write(ft_msg + '\n')
 
