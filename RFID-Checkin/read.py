@@ -13,7 +13,7 @@ To read more about Mercury API for Python go to: https://github.com/gotthardp/py
 Edited on: March 21, 2019
 '''
 
-from paho.mqtt import client as mqtt
+from paho.mqtt import publish, client as mqtt
 from reading_manager import ReadingManager
 from sensors import LaserManager
 from node_enums import *
@@ -84,9 +84,7 @@ class ManagerWrapper:
   def BeginTesting(self, callback):
     self.__check_availability()
     
-    print('available')
     self.__reading_man.BeginReading(callback=callback, testing=True)
-    print('started reading')
     self.__update_status(Status.RUNNING_READER_TEST)
 
   def StopTesting(self):
@@ -146,9 +144,8 @@ class ManagerWrapper:
   def __send_message(self, topic, message):
     if isinstance(topic, Topic):
       message_obj = {'TIMESTAMP' : datetime.datetime.now(), 'ID' : RASPI_ID, 'BODY' : message}
-      print('sending to reader/{}/{}'.format(RASPI_ID, topic.value))
-      self.__client.publish('reader/{}/{}'.format(RASPI_ID, topic.value), pickle.dumps(message_obj), qos=1)
-      print('sent')
+      publish.single('reader/{}/{}'.format(RASPI_ID, topic.value), payload=pickle.dumps(message_obj), qos=1, hostname="broker.mqttdashboard.com",
+                     port=8000, transport="websockets")
     else:
       raise ValueError("'topic' argument must be an instance of Topic")
   #endregion

@@ -133,14 +133,12 @@ class ReadingManager:
             if not lm.InLaser.Value and lm.OutLaser.Value:
                 while (datetime.datetime.now() - ts).total_seconds() < 3:
                     if not lm.OutLaser.Value:
-                        print('{} heading {}'.format(datetime.datetime.now(), 'out'))
-                        update_tag_directions(TimeRange(ts, datetime.datetime.now(), 1.5), TagStatus.Out)
+                        update_tag_directions(TimeRange(ts, datetime.datetime.now(), 2), TagStatus.Out)
                         time.sleep(0.5)
                         break
             if not lm.OutLaser.Value and lm.InLaser.Value:
                 while (datetime.datetime.now() - ts).total_seconds() < 3:
                     if not lm.InLaser.Value:
-                        print('{} heading {}'.format(datetime.datetime.now(), 'in'))
-                        update_tag_directions(TimeRange(ts, datetime.datetime.now(), 1.5), TagStatus.In)
+                        update_tag_directions(TimeRange(ts, datetime.datetime.now(), 2), TagStatus.In)
                         time.sleep(0.5)
                         break
