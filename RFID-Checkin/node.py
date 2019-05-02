@@ -110,7 +110,6 @@ class Node:
       self.__node_replies_lock.acquire()
       try:
         ind = [[x['ID'], x['BODY']] for x in self.__node_replies].index([self.ID, expected_response])
-        print(ind)
         self.__node_replies.pop(ind)
         received_response = True
       except:
@@ -155,6 +154,7 @@ class Node:
       if self.__status == Status.LOGGING:
         self.__logging_callback(message_obj, self.Location)
       elif self.__status == Status.REQUESTING_TAG:
+        print('calling cb')
         self.__read_once_callback(message_obj, self.Location)
         self.__read_once_callback = None
       elif self.__status == Status.RUNNING_READER_TEST:

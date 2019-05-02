@@ -52,7 +52,7 @@ class Handler:
     self.__sheets_update_interval_queue = queue.Queue()
     self.__sheets_update_interval_queue.put(6)
     self.__automatic_sheets_update_running = True
-    self.__start_automatic_sheet_update_service()
+    threading.Thread(target=self.__start_automatic_sheet_update_service).start()
     self.__command_reader.Start()
     
   @property
@@ -96,8 +96,7 @@ class Handler:
         hf.write(str_builder())
     elif write_mode == 'w':
       with open(self.__LOG_FILE, mode='w') as hf:
-        hf.write("Timestamp,Status,EPC,Owner,Description,Location,Extra")
-        hf.write(str_builder())
+        hf.write(f"Timestamp,Status,EPC,Owner,Description,Location,Extra{str_builder()}")
         
     self.__print_out(f"saved logs to {self.__LOG_FILE}")
 
@@ -117,10 +116,15 @@ class Handler:
 
   def LoadSettingsFile(self):
     Path(self.__SETTINGS_FILE).touch()
+    Path(self.__LOG_FILE).touch()
     rsf_data = None
+    log_data = None
 
     with open(self.__SETTINGS_FILE, 'r+b') as sf:
       rsf_data = sf.read()
+
+    with open(self.__LOG_FILE, 'r') as lf:
+      log_data = lf.read()
 
     # If settings file is empty, try to load from the Google Spreadsheet. Otherwise, use settings data
     if rsf_data == b"":
@@ -132,8 +136,11 @@ class Handler:
       self.__open_nodes_from_settings(settings_obj['nodes'])
       self.__print_out(f'loaded settings from {self.__SETTINGS_FILE}')
 
+    if log_data == "":
+      self.AddLogs(None, write_mode='w')
+
   def SaveSettingsFile(self):
-    node_properties = [{'id' : node.ID, 'location' : node.Location} for node in self.__nodes]
+    node_properties = [{'id' : node.ID, 'location' : node.Location} for node in self.Nodes]
     
     pickle.dump({
       'spreadsheet_id' : self.__spreadsheetID,
@@ -307,8 +314,6 @@ class Handler:
         }
        }
     """
-
-
     try:
       index = self.__rfidtags.index(next((tag for tag in self.__rfidtags if tag.EPC == log['BODY']['EPC']), None))
     except ValueError:
@@ -423,27 +428,23 @@ class Handler:
       update: int, amount of sheet updates per day.
     '''
 
-    def run_service():
-      time_count = 0
-      timeslice = 0
-      self.__print_out('running automatic sheet updates')
+    time_count = 0
+    timeslice = 0
+    self.__print_out('running automatic sheet updates')
 
-      while self.__automatic_sheets_update_running:
-        try:
-          interval = self.__sheets_update_interval_queue.get_nowait()
-          timeslice = 24 / interval * 3600
-        except queue.Empty:
-          pass
+    while self.__automatic_sheets_update_running:
+      try:
+        interval = self.__sheets_update_interval_queue.get_nowait()
+        timeslice = 24 / interval * 3600
+      except queue.Empty:
+        pass
 
-        if time_count == timeslice:
-          self.UpdateSheets(log_mode='a')
-          time_count = 0
+      if time_count == timeslice:
+        self.UpdateSheets(log_mode='a')
+        time_count = 0
 
-        time_count += 1
-        time.sleep(1)
-
-    service = threading.Thread(target=run_service)
-    service.start()
+      time_count += 1
+      time.sleep(1)
 
   def __stop_automatic_sheet_update_service(self):
     self.__automatic_sheets_update_running = False
