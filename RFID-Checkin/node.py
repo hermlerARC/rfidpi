@@ -1,9 +1,8 @@
-import enum, threading, datetime, pickle, pathlib
+import enum, threading, datetime, pickle, os
 from node_enums import *
 from paho.mqtt import client
 
 class Node:
-  __LOG_FILE = f'Node Logs/{self.ID}/'
   __DICT_VALUES = ['ID', 'Location', 'ErrorCallback', 'LoggingCallback', 'ReadOnceCallback', 'SensorTestingCallback', 'ReaderTestingCallback']
   __CONNECTIVITY_TIMEOUT = 2
   __MAX_CONNECTION_ATTEMPTS = 5
@@ -39,6 +38,9 @@ class Node:
     
     self.__node_replies = []
     self.__node_replies_lock = threading.Lock()
+
+    self.__LOG_FOLDER = f'Node Logs/{self.ID}/'
+    os.makedirs(self.__LOG_FOLDER, exist_ok=True)
 
     self.__client = client.Client(transport='websockets') # Connect with websockets
     self.__client.on_connect = self.__on_connect
@@ -140,10 +142,9 @@ class Node:
       'BODY' : [data being sent]
     }
     """
-
     message_obj = pickle.loads(msg.payload)
     topic = Topic(msg.topic.split(sep='/')[2])
-    
+
     if topic == Topic.NODE_STATUS:
       self.__status = message_obj['BODY']
     elif topic == Topic.NODE_RESPONSE:
@@ -163,7 +164,5 @@ class Node:
     elif topic == Topic.ERROR_CODES:
       self.__error_callback(message_obj)
     elif topic == Topic.NODE_LOG:
-      pathlib.Path(self.__LOG_FILE).mkdir(parents=True, exist_ok=True)
-      
-      with open(message_obj['BODY']['Name'], 'w') as LF:
+      with open(f"{self.__LOG_FOLDER}{message_obj['BODY']['Name']}", 'w') as LF:
         LF.write(message_obj['BODY']['Logs'])

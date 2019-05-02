@@ -18,6 +18,7 @@ class Command(enum.Enum):
   BEGIN_READER_TEST = "begin_reader_test"
   STOP_READER_TEST = "stop_reader_test"
   CHECK_STATUS = "check_status"
+  GET_LOGS = "get_logs"
   PING = "ping"
 
   def __str__(self):
