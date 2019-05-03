@@ -94,7 +94,8 @@ class ReadingManager:
                         updated_tag.Status = x[1]
                         callback(updated_tag)
                         tags.remove(y)
-            for y in tags:
+                    
+            for y in list(filter(lambda x: x.Status != TagStatus.Unknown, tags)):
                 callback(y)
                 
             tag_queue.put([])
