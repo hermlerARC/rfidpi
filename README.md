@@ -1,11 +1,11 @@
 # RFID Logging Software 
 
-This project was designed to aid the music department at American River College in preventing theft of instruments. It uses UHF RFID technology and sonic readers to determine direction of travel to track the instruments location. It then sends this data using MQTT to a client, combined with tag data from other devices, where it is then processed and stored locally on the client file system. The data is then uploaded to Google Sheets on an interval or when manually instructed.
+This project was designed to aid the music department at American River College in preventing theft of instruments. It uses UHF RFID tags, RFID readers, photoresistors, and lasers. Each node (Raspberry PI connected to all components) reads for UHF RFID tags and uses the lasers/photoresistors to determine the direction of travel. It then sends this data using MQTT to a client, combined with tag data from other nodes where it is then processed and stored locally on the client file system. The data is then uploaded to Google Sheets on an interval or when manually instructed.
 
 ## Parts Used:
 * 1 x [Raspberry Pi Model 3](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/) ($35)
 * 1 x [ThingMagic USB RFID Reader](https://www.atlasrfidstore.com/thingmagic-usb-plus-rfid-reader/) ($400)
-* 2 x [HCSR04 Sonic Readers](https://www.sparkfun.com/products/13959) ($5)
+* 2 x [LDR](https://www.adafruit.com/product/161) ($0.95)
 
 ## Diagrams
 ### Wiring
