@@ -39,7 +39,7 @@ pip3 install paho-mqtt
 6. Run `RFID-Checkin/read.py` on Raspberry Pi.
 7. Run `RFID-Checkin/handler.py` on a client computer.
 9. Enter a Google Spreadsheets ID. 
-8. Send handler.py the command: `r start_logging read`
+8. Send handler.py the command: `n start_logging -a`
 
 ## Notes
 - Contributors: Dominique Stepek, Gavin Furlong,  Abdullah Shabir, Prof. Ryan Hermle

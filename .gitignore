@@ -4,5 +4,7 @@
 .vscode
 *.pyc
 
-RFID-Checkin/Backend Handling/data/*
-RFID-Checkin/Backend Handling/test.py
+RFID-Checkin/data/*
+RFID-Checkin/test.py
+RFID-Checkin/System Logs/*
+RFID-Checkin/Node Logs/*
