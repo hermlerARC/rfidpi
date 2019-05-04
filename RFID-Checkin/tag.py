@@ -37,6 +37,9 @@ class Tag:
     self.Timestamp = datetime.datetime.now()
       
   def to_object(self):
+  """
+  Deprecated. Use Tag.__dict__ instead
+  """
     return {
         "EPC" : self.EPC,
         "Status" : self.Status.name,

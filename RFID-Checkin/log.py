@@ -1,3 +1,15 @@
+'''
+RFID Logging Software
+
+Description (log.py): 
+Log class
+
+Contributors:
+Dom Stepek
+
+Edited on: May 4, 2019
+'''
+
 import rfidtag, datetime, re, enum
 
 class Log:

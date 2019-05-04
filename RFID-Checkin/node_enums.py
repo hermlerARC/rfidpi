@@ -1,3 +1,15 @@
+'''
+RFID Logging Software
+
+Description (node_enums.py): 
+Contains the majority of the enums used by the software. Node status, commands, topics, and errors.
+
+Contributors:
+Dom Stepek
+
+Edited on: May 4, 2019
+'''
+
 import enum, hashlib
 
 class Status(enum.Enum):

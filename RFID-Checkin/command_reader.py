@@ -1,3 +1,15 @@
+'''
+RFID Logging Software
+
+Description (command_reader.py): 
+CLI for handler.py
+
+Contributors:
+Dom Stepek
+
+Edited on: May 4, 2019
+'''
+
 import threading, queue, re, enum
 from node_enums import Command
 from tabulate import tabulate
@@ -32,19 +44,26 @@ class CommandReader:
     if self.__running:
       raise RuntimeError('Attempted to start CommandReader while it was already running')
     
+    # Begins the actual CLI on seperate thread
     self.__running = True
-    cr_thread = threading.Thread(target=self.__run)
-    cr_thread.start()
+    threading.Thread(target=self.__run).start()
 
   def Stop(self):
     self.__handler.SafeClose()
     self.__running = False
 
   def GetInput(self, message=""):
-    self.__using_commands = True
+    """
+    Allows for temporary access to user input.
 
-    if message != "":
-      print(message, end=': ')
+    Args:
+      message: str, prompt for user.
+
+    Returns: str, user input
+    """
+
+    self.__using_commands = True
+    if message != "": print(message, end=': ')
     text_response = input()
     self.__using_commands = False
 
@@ -52,16 +71,19 @@ class CommandReader:
   
   def __run(self):
     while self.__running:
-      try:
-        text = input() # Gets input from standard input
-      except KeyboardInterrupt:
-        self.Stop()
+      try: text = input() # Gets input from standard input
+      except KeyboardInterrupt: self.Stop() # Attempts to safely close program if the user sends a KeyboardInterrupt
         
-      if text == "" or self.__using_commands:
-        continue
+      if text == "" or self.__using_commands: continue # Waits for non-empty user input or holds until __using_commands is freed.
 
+      # Gets all commands sent through input
       commands = iter(text.split(sep=' '))
       first_command = self.__get_first_command(next(commands, ""))
+
+      # The following code is incredibly dreadful. Please forgive me (Dom),
+      # there is no easier method to express this logic of which I am aware.
+      # Get in touch with Prof. Schuster of American River College who can
+      # contact me for a more detailed explanation.
 
       if first_command == CommandReader.Command.UNRECOGNIZED:
         self.__print_error(f"Invalid first command in: '{text}'")
@@ -101,7 +123,7 @@ class CommandReader:
           if node_argument == '-a':
             self.__handler.SendCommandToNodes(command, *(self.__handler.Nodes))
           if node_argument == '-s':
-            nodes = list(filter(lambda x: x.ID in selected_nodes, self.__handler.Nodes))
+            nodes = [x.ID for x in self.__handler.Nodes if x in selected_nodes]
             if len(nodes) == "":
               self.__print_error(f"Could not find specificed node(s): {', '.join(nodes)}")
             else:
@@ -167,6 +189,7 @@ class CommandReader:
     else:
       return CommandReader.Command.UNRECOGNIZED
 
+#region Display Commands
   def __print_error(self, msg):
     print(f"{msg}. Use 'h' for help.")
 
@@ -176,18 +199,19 @@ class CommandReader:
 
   def __print_nodes(self):
     print('\r\nNodes:\r\n')
-    nodes = list(map(lambda v: [v.ID, v.Location, v.Status], self.__handler.Nodes))
+    nodes = [[[v.ID, v.Location, v.Status]] for v in self.__handler.Nodes]
     print(tabulate(nodes, headers=['ID', 'Location', 'Status'], tablefmt="rst"))
 
   def __print_tags(self):
     print('\r\nTags:\r\n')
-    tags = list(map(lambda v: str(v).split(sep=','), self.__handler.RFIDTags))
+    tags = [str(v).split(sep=',') for v in self.__handler.RFIDTags]
     print(tabulate(tags, headers=['EPC', 'Status', 'Owner', 'Description', 'Last Location', 'Extra'], tablefmt="rst"))
 
   def __print_logs(self, rows):
     print('\r\nLogs:\r\n')
-    logs = list(map(lambda v: str(v).split(sep=','), self.__handler.GetLogsFile()[-rows:]))
+    logs = [str(v).split(sep=',') for v in self.__handler.GetLogsFile()[-rows:]]
     print(tabulate(logs, headers=['Timestamp', 'EPC', 'Status', 'Owner', 'Description', 'Location', 'Extra'], tablefmt="rst"))
+#endregion
 
 #region Help
   def ShowHelp(self):

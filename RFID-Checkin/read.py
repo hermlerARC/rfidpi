@@ -2,15 +2,15 @@
 RFID Logging Software
 
 Description (read.py): 
-Main script to run the Raspberry PI that handles creating and terminating the 
-reporting and scanning processes. Receives calls from UI Client to read, read once, and stop reading.
+Main script to run the Raspberry PI that acts as a manager of the reading manager.
+Receives commands from the MQTT connection. 
 
 Contributors:
-Dom Stepek, Gavin Furlong
+Dom Stepek
 
-To read more about Mercury API for Python go to: https://github.com/gotthardp/python-mercuryapi
-
-Edited on: March 21, 2019
+To read more about Mercury API for Python, go to: https://github.com/gotthardp/python-mercuryapi
+To read more about Paho MQTT for Python, go to: https://pypi.org/project/paho-mqtt/
+Edited on: May 4, 2019
 '''
 
 from paho.mqtt import publish, client as mqtt
@@ -20,9 +20,9 @@ from node_enums import *
 import pickle, mercury, datetime, pathlib, time
 import RPi.GPIO as GPIO
 
-# Unique ID to differentiate between different systems that are connected to the UI Client
+# Unique ID to differentiate between different systems that are connected to handler.py
 RASPI_ID = 'UPOGDU'
-LOG_FILE = "System Logs/{}.txt" # {} Are replaced by a datetime value in print_out()
+LOG_FILE = "System Logs/{}.txt" # {} is replaced by a datetime value in print_out()
 DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
 READER_PATH = "tmr:///dev/ttyUSB"
 
@@ -46,8 +46,7 @@ def connect_to_reader(path = READER_PATH, max_port = 10):
       reader.set_region('NA')
 
       return [reader, "{}{}".format(path, conn_port)]
-    except:
-      conn_port += 1
+    except: conn_port += 1
 
   return [reader, ""]
 
@@ -60,18 +59,23 @@ class ManagerWrapper:
     self.__status = Status.ONLINE
 
     # Attempt to connect to MQTT
+
+    # Connect with websockets. Eventually, if the front end is moved to a private server, this can be replaced
+    # with tcp. This isn't currently possible as American River College's WiFi has a firewall preventing this
+    # connection type. Additionally, a more secure way of sending data, if necessary, is to connect with a client ID
+    # that is recognized by the nodes.
     self.__client = mqtt.Client(transport='websockets')  # Connect with websockets
     self.__client.on_connect = self.__client_connected
     self.__client.on_message = self.__client_messaged
     self.__client.connect('broker.hivemq.com', port=8000)
 
-    try:
-      self.__client.loop_forever()
-    except (KeyboardInterrupt, SystemExit):
-      self.Shutdown()
-      
+    try: self.__client.loop_forever()
+    except (KeyboardInterrupt, SystemExit): self.Shutdown()
 
-  #region Manager Handling
+  @property
+  def Status(self):
+    return self.__status
+      
   def BeginLogging(self, callback):
     self.__check_availability()
     self.__reading_man.BeginReading(callback)
@@ -81,18 +85,7 @@ class ManagerWrapper:
     if self.__status == Status.LOGGING:
       self.__reading_man.StopReading()
       self.__update_status(Status.ONLINE)
-
-  def BeginTesting(self, callback):
-    self.__check_availability()
-    
-    self.__reading_man.BeginReading(callback=callback, testing=True)
-    self.__update_status(Status.RUNNING_READER_TEST)
-
-  def StopTesting(self):
-    if self.__status == Status.RUNNING_READER_TEST:
-      self.__reading_man.StopReading()
-      self.__update_status(Status.ONLINE)
-
+ 
   def ReadOnce(self, callback):
     self.__check_availability()
 
@@ -100,19 +93,52 @@ class ManagerWrapper:
     callback(self.__reading_man.ReadOnce())
     self.__update_status(Status.ONLINE)
 
+  def BeginTesting(self, callback):
+    self.__check_availability()
+    
+    self.__reading_man.StartReaderTest(callback)
+    self.__update_status(Status.RUNNING_READER_TEST)
+
+  def StopTesting(self):
+    if self.__status == Status.RUNNING_READER_TEST:
+      self.__reading_man.StopReaderTest()
+      self.__update_status(Status.ONLINE)
+
   def TestLasers(self, callback):
     self.__check_availability()
 
-    self.__laser_man.StartLasers(callback=callback)
+    self.__reading_man.TestLasers(callback=callback)
     self.__update_status(Status.RUNNING_SENSOR_TEST)
 
-  def StopSensors(self):
+  def StopLasers(self):
     if self.__status == Status.RUNNING_SENSOR_TEST:
-      self.__laser_man.StopLasers()
+      self.__reading_man.StopLaserTest()
       self.__update_status(Status.ONLINE)
-  #endregion
 
-  #region Client Handling
+  def Shutdown(self):
+    self.StopLogging()
+    self.StopTesting()
+    self.StopLasers()
+    
+    self.__print_out('stopped all activity')
+    
+    self.SendSystemLogs()
+    self.__send_message(Topic.NODE_STATUS, Status.OFFLINE)
+
+    self.__print_out('sent logs to server')
+    self.__print_out('shutting down node {}'.format(RASPI_ID))
+           
+    return self.Status
+
+  def SendSystemLogs(self):
+    log_data = ""
+    file_name = LOG_FILE.format(datetime.datetime.now().strftime('%m-%d-%Y'))
+    
+    with open(file_name, 'r') as LF:
+      log_data = LF.read()
+      
+    self.__send_message(Topic.NODE_LOG, { 'Name' : file_name.split(sep='/')[1], 'Logs' : log_data })
+
   def __client_messaged(self, client, data, msg):
     command = pickle.loads(msg.payload)
     self.__send_message(Topic.NODE_RESPONSE, repr(command)) # Reply to the sender to let it know we've received the message
@@ -126,9 +152,9 @@ class ManagerWrapper:
       elif command == Command.READ_ONCE:
         self.ReadOnce(callback=self.__log_tag)
       elif command == Command.BEGIN_SENSOR_TEST:
-        self.TestSensors(callback=self.__log_sensor_reading)
+        self.TestLasers(callback=self.__log_sensor_reading)
       elif command == Command.STOP_SENSOR_TEST:
-        self.StopSensors()
+        self.StopLasers()
       elif command == Command.BEGIN_READER_TEST:
         self.BeginTesting(self.__log_tag)
       elif command == Command.STOP_READER_TEST:
@@ -150,36 +176,6 @@ class ManagerWrapper:
       publish.single('reader/{}/{}'.format(RASPI_ID, topic.value), payload=pickle.dumps(message_obj), qos=1, hostname="broker.mqttdashboard.com", port=8000, transport="websockets")
     else:
       raise ValueError("'topic' argument must be an instance of Topic")
-  #endregion
-
-  def Shutdown(self):
-    self.StopLogging()
-    self.StopTesting()
-    self.StopSensors()
-    
-    self.__print_out('stopped all activity')
-    
-    self.SendSystemLogs()
-    self.__send_message(Topic.NODE_STATUS, Status.OFFLINE)
-
-    self.__print_out('sent logs to server')
-    self.__print_out('shutting down node {}'.format(RASPI_ID))
-    
-                                
-    return self.Status
-
-  def SendSystemLogs(self):
-    log_data = ""
-    file_name = LOG_FILE.format(datetime.datetime.now().strftime('%m-%d-%Y'))
-    
-    with open(file_name, 'r') as LF:
-      log_data = LF.read()
-      
-    self.__send_message(Topic.NODE_LOG, { 'Name' : file_name.split(sep='/')[1], 'Logs' : log_data })
-
-  @property
-  def Status(self):
-    return self.__status
 
   def __post_status(self):
     self.__send_message(Topic.NODE_STATUS, self.Status)
@@ -193,6 +189,10 @@ class ManagerWrapper:
     self.__print_out("{} caused error '{}': {}".format(trigger, error.Error, error.Message))
 
   def __check_availability(self):
+    """
+    Checks to see if the node is available to change status that is not online or offline.
+    """
+
     if self.__status == Status.LOGGING:
       raise NodeBusy(NodeError.NODE_BUSY_LOGGING)
     elif self.__status == Status.REQUESTING_TAG:
@@ -219,9 +219,9 @@ class ManagerWrapper:
     self.__send_message(Topic.TAG_READINGS, tag.__dict__)
     self.__print_out('read tag: {}'.format(tag.__dict__))
 
-  def __log_sensor_reading(self, sensor_reading):
-    self.__send_message(Topic.SENSOR_READINGS, sensor_reading.__dict__)
-    self.__print_out('read sensor value: {}'.format(sensor_reading.__dict__))
+  def __log_sensor_reading(self, laser_reading):
+    self.__send_message(Topic.SENSOR_READINGS, laser_reading)
+    self.__print_out('read sensor value: {}'.format(sensor_reading))
 
   def __update_status(self, status):
     if isinstance(status, Status):
@@ -233,9 +233,8 @@ class ManagerWrapper:
 if __name__ == '__main__':
   # Attempt to connect to reader
   reader, conn_path = connect_to_reader()
-  if conn_path != "":
-    pass
-  else:
+
+  if conn_path == "":
     raise ReaderUnreachable
     exit(1)
 

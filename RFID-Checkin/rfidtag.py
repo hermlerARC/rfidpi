@@ -1,3 +1,15 @@
+'''
+RFID Logging Software
+
+Description (rfidtag.py): 
+RFIDTag class
+
+Contributors:
+Dom Stepek
+
+Edited on: May 4, 2019
+'''
+
 import enum, re
 
 class RFIDTag:
