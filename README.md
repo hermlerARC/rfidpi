@@ -6,6 +6,9 @@ This project was designed to aid the music department at American River College 
 * 1 x [Raspberry Pi Model 3](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/) ($35)
 * 1 x [ThingMagic USB RFID Reader](https://www.atlasrfidstore.com/thingmagic-usb-plus-rfid-reader/) ($400)
 * 2 x [LDR](https://www.adafruit.com/product/161) ($0.95)
+* 2 x [Laser Diode](https://www.adafruit.com/product/1054) ($5.95)
+
+Total: $448.80
 
 ## Diagrams
 ### Wiring
@@ -33,14 +36,20 @@ make install
 pip3 install paho-mqtt
 ```
 5. Follow wiring and data flow diagrams to setup the physical devices.
-6. Run `RFID-Checkin/Raspi code/read.py` on Raspberry Pi.
-7. Run `RFID-Checkin/Backend Handling/handler.py` on a client computer.
+6. Run `RFID-Checkin/read.py` on Raspberry Pi.
+7. Run `RFID-Checkin/handler.py` on a client computer.
 9. Enter a Google Spreadsheets ID. 
-8. Send handler.py the command: `r -a read`
+8. Send handler.py the command: `r start_logging read`
 
 ## Notes
 - Contributors: Dominique Stepek, Gavin Furlong,  Abdullah Shabir, Prof. Ryan Hermle
-- More reading: [Google Sheets API](https://developers.google.com/sheets/api/), [MQTT](http://mqtt.org/), [Mercury API for Python](https://github.com/gotthardp/python-mercuryapi) 
-- `RFID-Checkin/Backend Handling/handler.py` supports the ability to interface with the local storage, sheets, and nodes through commands. Just input `h` for help.
+- `RFID-Checkin/handler.py` supports the ability to interface with the local storage, sheets, and nodes through commands. Just input `h` for help.
 - This project was programmed to interface with the Mercury API which requires ThingMagic RFID readers. 
 - RFID tags must respond to the UHF RFID band (860 to 960 MHz) to be read by the reader 
+
+## More Reading
+* [Google Sheets API](https://developers.google.com/sheets/api/)
+* [MQTT](http://mqtt.org/)
+* [Paho MQTT](https://pypi.org/project/paho-mqtt/)
+* [Mercury API for Python](https://github.com/gotthardp/python-mercuryapi)
+* [RF Physics: How Does Energy Flow in an RFID System?](https://blog.atlasrfidstore.com/rf-physics?utm_source=RFID-Beginners-Guide)
