@@ -12,9 +12,11 @@ Total: $448.80
 
 ## Diagrams
 ### Wiring
-![wiring diagram](https://github.com/hermlerARC/rfidpi/blob/master/Diagrams/Sensor%20Wiring.png?raw=true)
+![wiring diagram](https://github.com/hermlerARC/rfidpi/blob/master/Diagrams/Sensor%20Wiring.jpg?raw=true)
 ### Data Flow Diagram
 ![data flow diagram](https://github.com/hermlerARC/rfidpi/blob/master/Diagrams/Data%20Flow%20Diagram.jpg?raw=true)
+### Laser/Photoresistor Setup
+![laser diagram](https://github.com/hermlerARC/rfidpi/blob/master/Diagrams/laser%20diagram.jpg?raw=true)
 ### How RFID Works
 ![rfid diagram](https://howtomechatronics.com/wp-content/uploads/2017/05/RFID-Working-Principle.png)
 ## Install Instructions:
