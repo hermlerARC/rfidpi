@@ -12,9 +12,11 @@ Total: $448.80
 
 ## Diagrams
 ### Wiring
-![wiring diagram](https://github.com/hermlerARC/rfidpi/blob/master/Diagrams/Sensor%20Wiring.png?raw=true)
+![wiring diagram](https://github.com/hermlerARC/rfidpi/blob/master/Diagrams/Sensor%20Wiring.jpg?raw=true)
 ### Data Flow Diagram
 ![data flow diagram](https://github.com/hermlerARC/rfidpi/blob/master/Diagrams/Data%20Flow%20Diagram.jpg?raw=true)
+### Laser/Photoresistor Setup
+![laser diagram](https://github.com/hermlerARC/rfidpi/blob/master/Diagrams/laser%20diagram.jpg?raw=true)
 ### How RFID Works
 ![rfid diagram](https://howtomechatronics.com/wp-content/uploads/2017/05/RFID-Working-Principle.png)
 ## Install Instructions:
@@ -40,6 +42,13 @@ pip3 install paho-mqtt
 7. Run `RFID-Checkin/handler.py` on a client computer.
 9. Enter a Google Spreadsheets ID. 
 8. Send handler.py the command: `n start_logging -a`
+
+## TODO List
+- Create a structure for the node to be held in.
+- Find a way to automatically run the read.py script on the node upon startup (possibly crontab?). At the moment, startup of the script requires to be manually run with the command `python3 read.py`
+- Redo the command_reader.py `ShowHelp()` function. At the moment, the help function shows the wrong text (the commands listed are deprecated).
+- Research cheaper RFID readers; however, for this system to be practical, the readers  **_must_** support UHF reads.
+- Implement a camera into the node to take pictures when RFID tags have been scanned. 
 
 ## Notes
 - Contributors: Dominique Stepek, Gavin Furlong,  Abdullah Shabir, Prof. Ryan Hermle
