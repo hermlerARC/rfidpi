@@ -43,6 +43,13 @@ pip3 install paho-mqtt
 9. Enter a Google Spreadsheets ID. 
 8. Send handler.py the command: `n start_logging -a`
 
+## TODO List
+- Create a structure for the node to be held in.
+- Find a way to automatically run the read.py script on the node upon startup (possibly crontab?). At the moment, startup of the script requires to be manually run with the command `python3 read.py`
+- Redo the command_reader.py `ShowHelp()` function. At the moment, the help function shows the wrong text (the commands listed are deprecated).
+- Research cheaper RFID readers; however, for this system to be practical, the readers  **_must_** support UHF reads.
+- Implement a camera into the node to take pictures when RFID tags have been scanned. 
+
 ## Notes
 - Contributors: Dominique Stepek, Gavin Furlong,  Abdullah Shabir, Prof. Ryan Hermle
 - `RFID-Checkin/handler.py` supports the ability to interface with the local storage, sheets, and nodes through commands. Just input `h` for help.
