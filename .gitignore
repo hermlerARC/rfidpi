@@ -1,9 +1,9 @@
 *.json
 *.csv
 *.rsf
+*/test.py
 .vscode
 *.pyc
 
 RFID-Checkin/data/*
-RFID-Checkin/test.py
-RFID-Checkin/
+RFID-Checkin/Node Logs/*
