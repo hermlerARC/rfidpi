@@ -63,10 +63,12 @@ class ManagerWrapper:
     # Connect with websockets. Eventually, if the front end is moved to a private server, this can be replaced
     # with tcp. This isn't currently possible as American River College's WiFi has a firewall preventing this
     # connection type. Additionally, a more secure way of sending data, if necessary, is to connect with a client ID
-    # that is recognized by the nodes.
+    # that is recognized by the nodes. client.will_set sets the message to be sent by the MQTT client to the handler
+    # in the case that this node disconnects.
     self.__client = mqtt.Client(transport='websockets')  # Connect with websockets
     self.__client.on_connect = self.__client_connected
     self.__client.on_message = self.__client_messaged
+    self.__client.will_set("reader/{}/{}".format(RASPI_ID, Topic.NODE_STATUS), payload=pickle.dumps(Status.OFFLINE), qos=1)
     self.__client.connect('broker.hivemq.com', port=8000)
 
     try: self.__client.loop_forever()
